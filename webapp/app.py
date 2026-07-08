@@ -1,6 +1,7 @@
 import json
 import re
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import google.generativeai as genai
@@ -37,6 +38,8 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
+
+LINK_BOARD_PATH = Path(__file__).resolve().parent / "shared_links.json"
 
 
 def init_state() -> None:
@@ -390,6 +393,63 @@ def build_presentation_script(
     )
 
 
+def is_valid_http_url(url: str) -> bool:
+    return bool(re.match(r"^https?://[^\s]+$", url.strip()))
+
+
+def load_shared_links() -> List[Dict[str, str]]:
+    if not LINK_BOARD_PATH.exists():
+        return []
+    try:
+        content = json.loads(LINK_BOARD_PATH.read_text(encoding="utf-8"))
+        if isinstance(content, list):
+            safe_rows = []
+            for row in content:
+                if not isinstance(row, dict):
+                    continue
+                safe_rows.append(
+                    {
+                        "student": str(row.get("student", "익명")),
+                        "app_name": str(row.get("app_name", "이름 없는 앱")),
+                        "url": str(row.get("url", "")),
+                        "memo": str(row.get("memo", "")),
+                        "submitted_at": str(row.get("submitted_at", "")),
+                    }
+                )
+            return safe_rows
+    except Exception:
+        return []
+    return []
+
+
+def save_shared_links(rows: List[Dict[str, str]]) -> None:
+    LINK_BOARD_PATH.write_text(
+        json.dumps(rows, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def add_shared_link(student: str, app_name: str, url: str, memo: str) -> None:
+    rows = load_shared_links()
+    clean_url = url.strip()
+
+    # 같은 URL 중복 제출 방지
+    if any(r.get("url", "").strip() == clean_url for r in rows):
+        raise ValueError("이미 제출된 링크입니다. 다른 링크를 입력해 주세요.")
+
+    rows.insert(
+        0,
+        {
+            "student": student.strip(),
+            "app_name": app_name.strip(),
+            "url": clean_url,
+            "memo": memo.strip(),
+            "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        },
+    )
+    save_shared_links(rows)
+
+
 init_state()
 
 st.markdown('<div class="main-title">✨ 학생용 AI 웹앱 스타터</div>', unsafe_allow_html=True)
@@ -440,7 +500,7 @@ tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
         "3. HTML/app.py 생성법",
         "4. GitHub 업로드",
         "5. Streamlit 배포",
-        "6. 발표/제출 정리",
+        "6. 발표/공유",
     ]
 )
 
@@ -612,8 +672,8 @@ with tab5:
     st.caption(f"배포 준비도: {done}/4 ({int(ratio * 100)}%)")
 
 with tab6:
-    st.subheader("발표/제출 정리 템플릿")
-    st.markdown('<div class="tip">발표 직전 이 탭에 내용만 채우면, 발표 스크립트와 제출용 Markdown이 자동으로 만들어져요.</div>', unsafe_allow_html=True)
+    st.subheader("발표/공유 탭")
+    st.markdown('<div class="tip">여기에 배포 링크를 제출하면 친구들이 같은 공간에서 바로 들어가볼 수 있어요.</div>', unsafe_allow_html=True)
 
     p1, p2 = st.columns(2)
     with p1:
@@ -664,6 +724,46 @@ with tab6:
         mime="text/markdown",
         use_container_width=True,
     )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("### 🌐 우리반 웹앱 공유 보드")
+
+    with st.form("link_submit_form", clear_on_submit=True):
+        student_name = st.text_input("이름/닉네임")
+        shared_app_name = st.text_input("공유할 앱 이름")
+        shared_url = st.text_input("배포 링크(URL)", placeholder="https://...")
+        shared_memo = st.text_input("한 줄 소개", placeholder="예: 공부 루틴 도와주는 앱")
+        submit_link = st.form_submit_button("공유 보드에 제출")
+
+    if submit_link:
+        if not student_name.strip() or not shared_app_name.strip() or not shared_url.strip():
+            st.error("이름, 앱 이름, 배포 링크는 필수예요.")
+        elif not is_valid_http_url(shared_url):
+            st.error("링크는 http:// 또는 https:// 로 시작해야 해요.")
+        else:
+            try:
+                add_shared_link(student_name, shared_app_name, shared_url, shared_memo)
+                st.success("공유 보드에 등록 완료! 아래 목록에서 확인해 보세요.")
+                st.toast("링크 제출 성공", icon="🎉")
+            except Exception as exc:
+                st.error(str(exc))
+
+    links = load_shared_links()
+    st.caption(f"총 {len(links)}개의 앱이 공유되어 있어요.")
+
+    if links:
+        for i, row in enumerate(links, start=1):
+            st.markdown(f"**{i}. {row['app_name']}**")
+            st.markdown(f"- 만든 사람: {row['student']}")
+            if row.get("memo", "").strip():
+                st.markdown(f"- 소개: {row['memo']}")
+            st.markdown(f"- 배포 링크: [바로 들어가기]({row['url']})")
+            st.caption(f"제출 시각: {row['submitted_at']}")
+            st.markdown("---")
+    else:
+        st.info("아직 공유된 링크가 없습니다. 첫 번째로 등록해 보세요!")
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 st.caption(f"업데이트 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
