@@ -1,20 +1,16 @@
-# ✨ 학생용 AI 웹앱 스타터
+# 🌟 우리반 웹앱 공유 보드
 
-학생이 직접 웹앱을 만들고 배포할 수 있도록 만든 Streamlit 앱입니다.
+학생들이 만든 Streamlit 웹앱 링크를 한곳에 모아서 공유하는 앱입니다.
 
-## 주요 기능
+## 기능
 
-- 웹앱 아이디어 추천
-- 아이디어 선택 시 프롬프트 도우미로 자동 입력
-- Gemini에 바로 붙여넣을 수 있는 고품질 프롬프트 3종 생성
-  - HTML 코드 생성 프롬프트
-  - Streamlit app.py 생성 프롬프트
-  - HTML → app.py 변환 프롬프트
-- GitHub 업로드 가이드
-- Streamlit 배포 가이드
-- Google Sheets 연동 링크 공유 보드
-  - 학생 배포 링크 제출
-  - 전체 학생 링크 모아보기
+- 제출 탭에서 아래 4가지만 입력 후 제출
+  - 이름
+  - 웹앱 제목
+  - 한 줄 설명
+  - 스트림릿 링크
+- 제출 내용은 Google Sheets에 저장
+- 친구들 링크 접속 탭에서 카드 형태로 보기 + 바로 접속 버튼
 
 ## 실행
 
@@ -27,19 +23,16 @@ pip install -r webapp/requirements.txt
 streamlit run webapp/app.py
 ```
 
-## API 및 시트 연동 설정
-
-`.streamlit/secrets.toml` 예시:
+## Streamlit Secrets 설정
 
 ```toml
-GEMINI_API_KEY = "YOUR_GEMINI_KEY"
 GOOGLE_SHEETS_SPREADSHEET_ID = "YOUR_SPREADSHEET_ID"
 
 [GOOGLE_SERVICE_ACCOUNT]
 type = "service_account"
 project_id = "..."
 private_key_id = "..."
-private_key = "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n"
+private_key = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 client_email = "...@....iam.gserviceaccount.com"
 client_id = "..."
 auth_uri = "https://accounts.google.com/o/oauth2/auth"
