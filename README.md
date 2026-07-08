@@ -1,17 +1,19 @@
-# 🧠 학생용 AI 웹앱 메이커
+# ✨ 학생용 AI 웹앱 스타터
 
-Gemini + GitHub + Streamlit을 활용해 학생들이 원하는 웹앱을 직접 만들고 배포할 수 있도록 돕는 수업용 앱입니다.
+학생이 직접 웹앱을 만들고 배포할 수 있도록 만든 Streamlit 앱입니다.
 
-## 포함 기능
+## 주요 기능
 
-- 웹앱 아이디어 추천 기능
-- 학생 아이디어를 실제 코드로 바꾸는 프롬프트 생성 기능
-- Gemini/GitHub/Streamlit 전체 제작 과정 설명 탭 (가장 먼저 배치)
-- Gemini로 HTML 코드 + app.py 코드 생성 프롬프트 작성법
-- GitHub 업로드 방법 가이드
-- Streamlit Community Cloud 배포 방법 가이드
+- 웹앱 아이디어 추천
+- 아이디어 선택 시 프롬프트 도우미로 자동 입력
+- Gemini에 바로 붙여넣을 수 있는 고품질 프롬프트 3종 생성
+  - HTML 코드 생성 프롬프트
+  - Streamlit app.py 생성 프롬프트
+  - HTML → app.py 변환 프롬프트
+- GitHub 업로드 가이드
+- Streamlit 배포 가이드
 
-## 실행 방법
+## 실행
 
 ```bash
 git clone https://github.com/richee-pc/webapp.git
@@ -24,7 +26,7 @@ streamlit run webapp/app.py
 
 ## API 키 설정
 
-`.streamlit/secrets.toml` 예시:
+`.streamlit/secrets.toml`
 
 ```toml
 GEMINI_API_KEY = "여기에_본인_API_키"
@@ -32,4 +34,4 @@ GEMINI_API_KEY = "여기에_본인_API_키"
 
 ## 배포 시 메인 파일 경로
 
-`webapp/app.py`
+- `webapp/app.py`
