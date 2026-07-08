@@ -335,6 +335,61 @@ def process_flow_markdown() -> str:
     )
 
 
+def build_presentation_markdown(
+    app_name: str,
+    one_line: str,
+    features: List[str],
+    github_url: str,
+    deploy_url: str,
+    challenge: str,
+    improvement: str,
+) -> str:
+    feature_lines = [f"- {f.strip()}" for f in features if f.strip()]
+    if not feature_lines:
+        feature_lines = ["- 핵심 기능을 1개 이상 작성해 주세요."]
+
+    return "\n".join(
+        [
+            f"# {app_name or '내 웹앱 프로젝트'}",
+            "",
+            "## 한 줄 소개",
+            one_line or "한 줄 소개를 작성해 주세요.",
+            "",
+            "## 핵심 기능",
+            *feature_lines,
+            "",
+            "## 프로젝트 링크",
+            f"- GitHub: {github_url or '링크를 입력해 주세요.'}",
+            f"- 배포 URL: {deploy_url or '링크를 입력해 주세요.'}",
+            "",
+            "## 만들면서 어려웠던 점",
+            challenge or "어려웠던 점을 작성해 주세요.",
+            "",
+            "## 다음 버전에서 개선할 점",
+            improvement or "개선할 점을 작성해 주세요.",
+            "",
+            f"_작성 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}_",
+        ]
+    )
+
+
+def build_presentation_script(
+    app_name: str,
+    one_line: str,
+    features: List[str],
+    deploy_url: str,
+) -> str:
+    clean_features = [f.strip() for f in features if f.strip()]
+    top_features = clean_features[:3] if clean_features else ["핵심 기능"]
+
+    return (
+        f"안녕하세요. 저희가 만든 앱은 '{app_name or '내 웹앱'}' 입니다. "
+        f"이 앱은 {one_line or '학생이 직접 문제를 해결하도록 돕는 웹앱'} 를 목표로 만들었습니다. "
+        f"특히 {', '.join(top_features)} 기능을 구현했습니다. "
+        f"배포 주소는 {deploy_url or '배포 주소 입력 예정'} 이고, 발표 후 피드백을 반영해 더 개선하겠습니다."
+    )
+
+
 init_state()
 
 st.markdown('<div class="main-title">✨ 학생용 AI 웹앱 스타터</div>', unsafe_allow_html=True)
@@ -377,7 +432,7 @@ with m3:
     st.metric("현재 난이도", st.session_state.level)
 
 
-tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(
+tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
     [
         "0. 제작 과정 설명",
         "1. 아이디어 추천",
@@ -385,6 +440,7 @@ tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(
         "3. HTML/app.py 생성법",
         "4. GitHub 업로드",
         "5. Streamlit 배포",
+        "6. 발표/제출 정리",
     ]
 )
 
@@ -554,5 +610,60 @@ with tab5:
     ratio = done / 4
     st.progress(ratio)
     st.caption(f"배포 준비도: {done}/4 ({int(ratio * 100)}%)")
+
+with tab6:
+    st.subheader("발표/제출 정리 템플릿")
+    st.markdown('<div class="tip">발표 직전 이 탭에 내용만 채우면, 발표 스크립트와 제출용 Markdown이 자동으로 만들어져요.</div>', unsafe_allow_html=True)
+
+    p1, p2 = st.columns(2)
+    with p1:
+        app_name = st.text_input("앱 이름", value=st.session_state.selected_idea.split("\n")[0] if st.session_state.selected_idea else "")
+        one_line = st.text_input("한 줄 소개", value="학생 문제를 해결하는 AI 웹앱")
+        feature_text = st.text_area(
+            "핵심 기능(줄바꿈으로 입력)",
+            value=st.session_state.selected_features.replace(", ", "\n") if st.session_state.selected_features else "",
+            height=120,
+        )
+    with p2:
+        github_url = st.text_input("GitHub 링크", value="")
+        deploy_url = st.text_input("배포 링크", value="")
+        challenge = st.text_area("어려웠던 점", value="", height=80)
+        improvement = st.text_area("다음에 개선할 점", value="", height=80)
+
+    features = [line.strip() for line in feature_text.splitlines() if line.strip()]
+    report_md = build_presentation_markdown(
+        app_name,
+        one_line,
+        features,
+        github_url,
+        deploy_url,
+        challenge,
+        improvement,
+    )
+    script_text = build_presentation_script(app_name, one_line, features, deploy_url)
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("### 30초 발표 스크립트")
+    st.code(script_text, language="text")
+    st.download_button(
+        "발표 스크립트 다운로드",
+        data=script_text,
+        file_name="presentation_script.txt",
+        mime="text/plain",
+        use_container_width=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("### 제출용 Markdown")
+    st.code(report_md, language="markdown")
+    st.download_button(
+        "제출용 Markdown 다운로드",
+        data=report_md,
+        file_name="project_submission.md",
+        mime="text/markdown",
+        use_container_width=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
 st.caption(f"업데이트 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
