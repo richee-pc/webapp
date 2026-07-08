@@ -1,35 +1,45 @@
-# 🎬 MoodFlix AI - 감정 기반 영화 추천 웹앱
+# 🚀 AI 웹앱 수업 메이커 (Gemini + GitHub + Streamlit)
 
-Gemini API + Streamlit으로 만드는 감정 기반 영화 추천 프로젝트입니다.  
-입문자도 따라할 수 있도록 **설치 → 실행 → GitHub 관리 → 배포**까지 한 번에 정리했습니다.
+학생들이 **각자 원하는 주제**로 웹앱을 만들 수 있도록, 선생님이 4차시를 자유롭고 흥미롭게 운영할 수 있게 도와주는 앱입니다.
 
----
-
-## 1) 프로젝트 소개
-
-- **앱 이름**: MoodFlix AI
-- **핵심 기능**
-  - 오늘의 기분/장르/시청 시간 기반 맞춤 영화 추천
-  - Gemini가 추천 이유와 감정 매칭 점수 생성
-  - 추천 결과 찜 목록 저장
-- **대상**: Python/Streamlit 입문자, 수업 프로젝트 제작 학생
+- 4차시 수업 운영안 자동 생성
+- 학생 프로젝트 아이디어 자동 생성
+- GitHub/Streamlit 배포 체크리스트 제공
 
 ---
 
-## 2) 폴더 구조
+## 1) 이 앱이 해결하는 문제
 
-```text
-webapp/
-├── app.py
-├── requirements.txt
-└── .gitignore
-```
+수업 전에 가장 어려운 부분은 아래 3가지입니다.
 
-> 현재 저장소 루트 기준으로 앱 코드는 `webapp/app.py`에 있습니다.
+1. 주제가 제각각인 학생들을 한 흐름으로 운영하기
+2. Gemini 연동 + GitHub + 배포까지 4차시에 맞추기
+3. 흥미 요소(게임화, 미션, 발표)를 자연스럽게 넣기
+
+이 앱은 위 과정을 클릭 몇 번으로 설계할 수 있게 만듭니다.
 
 ---
 
-## 3) 로컬 실행 방법
+## 2) 주요 기능
+
+### 🧭 4차시 수업 설계
+- 테마/난이도/학생 수/차시 시간 입력
+- 1~4차시 목표, 활동, 산출물, 흥미 요소 자동 생성
+- Markdown 파일로 운영안 다운로드
+
+### 💡 학생 아이디어 생성
+- 키워드 입력 시 학생 프로젝트 아이디어 여러 개 생성
+- 각 아이디어마다 핵심 기능 3개 + UI 포인트 3개 제안
+- GitHub 미션과 배포 팁 함께 제공
+
+### ✅ GitHub/배포 트래커
+- GitHub 실습 체크리스트
+- Streamlit Community Cloud 배포 체크리스트
+- 전체 진행률 시각화
+
+---
+
+## 3) 실행 방법
 
 ### 3-1. 저장소 클론
 
@@ -60,99 +70,70 @@ python -m venv .venv
 pip install -r webapp/requirements.txt
 ```
 
-### 3-4. 앱 실행
+### 3-4. 실행
 
 ```bash
 streamlit run webapp/app.py
 ```
 
-브라우저가 자동으로 열리지 않으면 터미널에 출력된 로컬 주소를 직접 접속하세요.
-
 ---
 
 ## 4) Gemini API 키 설정
 
-앱은 아래 우선순위로 API 키를 읽습니다.
+앱은 아래 우선순위로 API 키를 사용합니다.
 
 1. `st.secrets["GEMINI_API_KEY"]` (권장)
-2. 앱 사이드바에 직접 입력
+2. 사이드바 직접 입력
 
-### 4-1. 로컬 Secrets 설정 (권장)
+### 로컬 secrets 설정
 
-프로젝트 루트에 `.streamlit/secrets.toml` 파일 생성:
-
-```toml
-GEMINI_API_KEY = "여기에_본인_API_키"
-```
-
-> `.streamlit/secrets.toml`은 `.gitignore`에 포함되어 있어 GitHub에 올라가지 않습니다.
-
----
-
-## 5) 수업용 4차시 로드맵
-
-### ✅ 1차시: 환경 설정 + UI 익히기
-
-- 가상환경 생성/패키지 설치
-- Streamlit 기본 구조 이해 (사이드바, 컬럼, 탭, 폼)
-- 앱 실행 확인
-
-### ✅ 2차시: Gemini API 연동 + 프롬프트 튜닝
-
-- API 키 발급 및 Secrets 연결
-- 프롬프트 수정 실습 (추천 개수, 말투, 설명 방식)
-- 예외 처리 확인 (키 누락, 파싱 실패)
-
-### ✅ 3차시: GitHub 버전 관리
-
-- 변경 사항 커밋/푸시
-- 커밋 메시지 규칙 연습 (`feat`, `fix`, `docs`)
-- README 업데이트 및 협업 준비
-
-### ✅ 4차시: Streamlit Community Cloud 배포
-
-- GitHub 저장소 연결
-- 메인 파일 경로: `webapp/app.py`
-- Secrets에 `GEMINI_API_KEY` 등록
-- 배포 링크 생성 및 공유
-
----
-
-## 6) Streamlit Community Cloud 배포 순서
-
-1. [Streamlit Community Cloud](https://share.streamlit.io/) 로그인
-2. **New app** 클릭
-3. Repository: `richee-pc/webapp` 선택
-4. Branch: `main`
-5. Main file path: `webapp/app.py`
-6. Advanced settings > Secrets에 아래 추가:
+프로젝트 루트에 `.streamlit/secrets.toml` 생성:
 
 ```toml
 GEMINI_API_KEY = "여기에_본인_API_키"
 ```
 
-7. Deploy 클릭
+---
+
+## 5) 4차시 운영 예시
+
+### 1차시: 환경 설정 + 기본 UI
+- Streamlit 기본 구조 만들기
+- 학생별 주제 선택
+
+### 2차시: Gemini API 연동
+- 입력 폼 + 프롬프트 + 출력 파싱
+- 예외 처리 실습
+
+### 3차시: GitHub 협업
+- 커밋/푸시/README 작성
+- 기능 고도화
+
+### 4차시: Streamlit 배포 + 발표
+- Cloud 배포
+- URL 공유 및 데모 발표
 
 ---
 
-## 7) 트러블슈팅
+## 6) Streamlit Community Cloud 배포
 
-- **API 키 오류**: 키 앞뒤 공백 제거, Secrets 저장 후 재배포
-- **모듈 오류**: 가상환경 활성화 상태에서 `pip install -r webapp/requirements.txt`
-- **배포 실패**: Main file path가 `webapp/app.py`인지 확인
-- **응답 파싱 실패**: 앱에서 다시 요청하거나 추천 조건을 단순화
+1. [Streamlit Community Cloud](https://share.streamlit.io/) 접속
+2. Repository: `richee-pc/webapp`
+3. Branch: `main`
+4. Main file path: `webapp/app.py`
+5. Secrets 등록:
 
----
+```toml
+GEMINI_API_KEY = "여기에_본인_API_키"
+```
 
-## 8) 확장 아이디어
-
-- 영화 포스터 이미지 자동 표시
-- 추천 결과 CSV 다운로드 기능
-- 사용자 닉네임/테마 컬러 설정
-- 명대사 카드 공유 이미지 생성
+6. Deploy
 
 ---
 
-## 9) 라이선스
+## 7) 확장 아이디어
 
-학습/수업용으로 자유롭게 사용 가능합니다.
+- 학생 발표 점수표 자동 생성
+- 팀별 작업 보드(역할/진행 상황)
+- 우수작 자동 하이라이트 갤러리
+- 수업 종료 후 회고 리포트 자동 생성

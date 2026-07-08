@@ -3,50 +3,51 @@ import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-import streamlit as st
 import google.generativeai as genai
+import streamlit as st
 
 
 st.set_page_config(
-    page_title="MoodFlix AI - 감정 기반 영화 추천소",
-    page_icon="🎬",
+    page_title="AI 웹앱 수업 메이커",
+    page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 CUSTOM_CSS = """
 <style>
-.main-title {
-    font-size: 2.0rem;
+.title {
+    font-size: 2.1rem;
     font-weight: 800;
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.25rem;
 }
-.sub-title {
+.subtitle {
     color: #6b7280;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1.1rem;
 }
 .card {
     padding: 1rem;
-    border-radius: 16px;
+    border-radius: 14px;
     border: 1px solid #e5e7eb;
-    background: linear-gradient(145deg, #ffffff, #f9fafb);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
     margin-bottom: 0.8rem;
+}
+.kpi {
+    font-size: 1rem;
+    color: #374151;
 }
 </style>
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 
-def init_session_state() -> None:
-    if "recommendations" not in st.session_state:
-        st.session_state.recommendations: List[Dict[str, Any]] = []
-    if "favorites" not in st.session_state:
-        st.session_state.favorites: List[Dict[str, Any]] = []
-    if "last_query" not in st.session_state:
-        st.session_state.last_query: Dict[str, Any] = {}
-    if "api_key_from_sidebar" not in st.session_state:
-        st.session_state.api_key_from_sidebar = ""
+def init_state() -> None:
+    if "api_key_sidebar" not in st.session_state:
+        st.session_state.api_key_sidebar = ""
+    if "class_plan" not in st.session_state:
+        st.session_state.class_plan = []
+    if "student_ideas" not in st.session_state:
+        st.session_state.student_ideas = []
     if "last_error" not in st.session_state:
         st.session_state.last_error = ""
 
@@ -65,290 +66,375 @@ def get_active_api_key() -> Optional[str]:
     secret_key = get_secret_api_key()
     if secret_key:
         return secret_key
-    sidebar_key = st.session_state.api_key_from_sidebar.strip()
-    return sidebar_key if sidebar_key else None
+    manual_key = st.session_state.api_key_sidebar.strip()
+    return manual_key if manual_key else None
 
 
-def clean_model_text(text: str) -> str:
-    cleaned = text.strip()
-    cleaned = re.sub(r"^```json\\s*", "", cleaned, flags=re.IGNORECASE)
-    cleaned = re.sub(r"^```\\s*", "", cleaned)
-    cleaned = re.sub(r"\\s*```$", "", cleaned)
-    return cleaned.strip()
+def normalize_json_text(raw: str) -> str:
+    text = raw.strip()
+    text = re.sub(r"^```json\\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^```\\s*", "", text)
+    text = re.sub(r"\\s*```$", "", text)
+    return text.strip()
 
 
-def extract_json_array(text: str) -> Optional[List[Dict[str, Any]]]:
-    cleaned = clean_model_text(text)
+def parse_json_array(raw: str) -> Optional[List[Dict[str, Any]]]:
+    text = normalize_json_text(raw)
     try:
-        data = json.loads(cleaned)
-        if isinstance(data, list):
-            return data
+        obj = json.loads(text)
+        if isinstance(obj, list):
+            return obj
     except Exception:
         pass
 
-    match = re.search(r"\\[\\s*{.*}\\s*]", cleaned, flags=re.DOTALL)
+    match = re.search(r"\\[\\s*{.*}\\s*]", text, flags=re.DOTALL)
     if not match:
         return None
 
-    candidate = match.group(0)
     try:
-        data = json.loads(candidate)
-        if isinstance(data, list):
-            return data
+        obj = json.loads(match.group(0))
+        if isinstance(obj, list):
+            return obj
     except Exception:
         return None
     return None
 
 
-def validate_recommendation_item(item: Dict[str, Any]) -> Dict[str, Any]:
-    title = str(item.get("title", "제목 정보 없음")).strip() or "제목 정보 없음"
-    year = str(item.get("year", "미상")).strip() or "미상"
+def call_gemini(prompt: str, temperature: float = 0.7) -> str:
+    api_key = get_active_api_key()
+    if not api_key:
+        raise ValueError("API 키가 없어 Gemini 호출을 진행할 수 없습니다.")
 
-    genres = item.get("genres", [])
-    if not isinstance(genres, list):
-        genres = [str(genres)]
-    genres = [str(g).strip() for g in genres if str(g).strip()]
-    if not genres:
-        genres = ["장르 미상"]
-
-    reason = str(item.get("reason", "추천 이유 정보가 없습니다.")).strip() or "추천 이유 정보가 없습니다."
-
-    mood_match_score = item.get("mood_match_score", 70)
-    try:
-        mood_match_score = int(mood_match_score)
-    except Exception:
-        mood_match_score = 70
-    mood_match_score = max(0, min(100, mood_match_score))
-
-    watch_time = str(item.get("watch_time", "약 100분")).strip() or "약 100분"
-    age_rating = str(item.get("age_rating", "전체관람가")).strip() or "전체관람가"
-
-    quote = str(item.get("quote", "오늘의 감정에 어울리는 이야기를 만나보세요.")).strip()
-    if not quote:
-        quote = "오늘의 감정에 어울리는 이야기를 만나보세요."
-
-    return {
-        "title": title,
-        "year": year,
-        "genres": genres,
-        "reason": reason,
-        "mood_match_score": mood_match_score,
-        "watch_time": watch_time,
-        "age_rating": age_rating,
-        "quote": quote,
-    }
-
-
-def build_prompt(user_input: Dict[str, Any]) -> str:
-    mood = user_input["mood"]
-    mood_intensity = user_input["mood_intensity"]
-    preferred_genres = ", ".join(user_input["preferred_genres"]) if user_input["preferred_genres"] else "상관없음"
-    watch_time = user_input["watch_time"]
-    avoid_elements = user_input["avoid_elements"] if user_input["avoid_elements"].strip() else "없음"
-    language_pref = user_input["language_pref"]
-    count = user_input["count"]
-
-    return f"""
-너는 영화 큐레이터야. 아래 사용자 조건을 반영해 영화 추천을 만들어.
-반드시 JSON 배열만 출력하고 코드블록은 절대 포함하지 마.
-
-[사용자 조건]
-- 현재 기분: {mood}
-- 감정 강도(1~10): {mood_intensity}
-- 선호 장르: {preferred_genres}
-- 시청 가능 시간: {watch_time}
-- 피하고 싶은 요소: {avoid_elements}
-- 언어 선호: {language_pref}
-- 추천 개수: {count}개
-
-[출력 형식]
-아래 키를 가진 JSON 배열:
-[
-  {{
-    "title": "영화 제목",
-    "year": "개봉연도",
-    "genres": ["장르1", "장르2"],
-    "reason": "왜 이 사용자에게 맞는지 2~3문장",
-    "mood_match_score": 0~100 정수,
-    "watch_time": "예: 120분",
-    "age_rating": "예: 12세 관람가",
-    "quote": "영화 감성을 살리는 짧은 한 줄"
-  }}
-]
-""".strip()
-
-
-def call_gemini(api_key: str, prompt: str, temperature: float) -> List[Dict[str, Any]]:
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel("gemini-1.5-flash")
-
     response = model.generate_content(
         prompt,
         generation_config={
             "temperature": temperature,
             "top_p": 0.95,
-            "max_output_tokens": 2048,
+            "max_output_tokens": 4096,
         },
     )
 
     text = ""
     if hasattr(response, "text") and response.text:
         text = response.text
-    else:
-        if hasattr(response, "candidates") and response.candidates:
-            parts = response.candidates[0].content.parts
-            if parts and hasattr(parts[0], "text"):
-                text = parts[0].text or ""
+    elif hasattr(response, "candidates") and response.candidates:
+        parts = response.candidates[0].content.parts
+        if parts and hasattr(parts[0], "text"):
+            text = parts[0].text or ""
 
     if not text.strip():
         raise ValueError("Gemini 응답이 비어 있습니다. 잠시 후 다시 시도해 주세요.")
 
-    parsed = extract_json_array(text)
-    if not parsed:
-        raise ValueError("응답 파싱에 실패했습니다. 다시 시도하면 정상 동작할 수 있습니다.")
-
-    validated = [validate_recommendation_item(item) for item in parsed if isinstance(item, dict)]
-    if not validated:
-        raise ValueError("유효한 추천 데이터가 없습니다.")
-
-    return validated
+    return text
 
 
-def add_to_favorites(item: Dict[str, Any]) -> None:
-    titles = [fav["title"] for fav in st.session_state.favorites]
-    if item["title"] not in titles:
-        st.session_state.favorites.append(item)
-        st.toast(f"'{item['title']}' 찜 목록에 추가됨!", icon="⭐")
-    else:
-        st.toast(f"'{item['title']}'은(는) 이미 찜 목록에 있어요.", icon="✅")
+def fallback_class_plan(theme: str) -> List[Dict[str, str]]:
+    return [
+        {
+            "session": "1차시",
+            "goal": "환경 구축 + 앱 뼈대 완성",
+            "activities": "Python 가상환경, Streamlit 기본 UI(사이드바/컬럼/버튼) 만들기, 개인 주제 1차 선정",
+            "deliverable": "실행되는 기본 app.py",
+            "fun_point": "아이스브레이킹: 5분 랜덤 아이디어 피칭",
+        },
+        {
+            "session": "2차시",
+            "goal": "Gemini API 연동 + 프롬프트 설계",
+            "activities": "st.secrets 설정, 입력 폼 구성, JSON 출력 파싱, 오류 처리 강화",
+            "deliverable": "AI 응답이 앱 UI에 표시되는 버전",
+            "fun_point": "프롬프트 배틀: 같은 주제로 가장 창의적 결과 뽑기",
+        },
+        {
+            "session": "3차시",
+            "goal": "GitHub 협업 + 기능 고도화",
+            "activities": "repo 생성, 커밋 메시지 규칙, 기능 1개 추가(시각화/즐겨찾기/다운로드)",
+            "deliverable": "README 포함 공개 저장소",
+            "fun_point": "짝 코드리뷰: 서로의 앱 장점 3개 찾기",
+        },
+        {
+            "session": "4차시",
+            "goal": "Streamlit Cloud 배포 + 발표",
+            "activities": "Cloud 연결, Secrets 등록, 배포 URL 공유, 데모 발표",
+            "deliverable": "배포 완료 URL + 발표 자료",
+            "fun_point": f"테마 '{theme}' 기반 미니 해커톤 발표회",
+        },
+    ]
 
 
-def render_recommendation_cards(items: List[Dict[str, Any]]) -> None:
-    if not items:
-        st.info("아직 추천 결과가 없습니다. 왼쪽 조건을 입력하고 추천을 받아보세요.")
-        return
-
-    for idx, item in enumerate(items, start=1):
-        genre_text = ", ".join(item["genres"])
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        col_a, col_b = st.columns([3, 2])
-
-        with col_a:
-            st.markdown(f"### {idx}. {item['title']} ({item['year']})")
-            st.caption(f"🎭 장르: {genre_text} | ⏱️ 러닝타임: {item['watch_time']} | 🔞 등급: {item['age_rating']}")
-            st.markdown(f"**추천 이유**  \\n{item['reason']}")
-            st.markdown(f"> _{item['quote']}_")
-
-        with col_b:
-            st.metric("감정 매칭 점수", f"{item['mood_match_score']}점")
-            st.progress(item["mood_match_score"] / 100.0)
-            if st.button("⭐ 찜하기", key=f"fav_btn_{idx}_{item['title']}", use_container_width=True):
-                add_to_favorites(item)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-
-def render_favorites(items: List[Dict[str, Any]]) -> None:
-    if not items:
-        st.warning("찜 목록이 비어 있습니다. 추천 결과에서 '찜하기'를 눌러보세요.")
-        return
-
-    st.success(f"총 {len(items)}개의 영화를 찜했어요!")
-    for idx, item in enumerate(items, start=1):
-        st.markdown(f"**{idx}. {item['title']} ({item['year']})**")
-        st.caption(f"장르: {', '.join(item['genres'])} | 시간: {item['watch_time']} | 등급: {item['age_rating']}")
-        st.markdown(f"- 추천 이유: {item['reason']}")
-        st.markdown(f"- 한 줄 감성: _{item['quote']}_")
+def fallback_student_ideas(topic: str, count: int) -> List[Dict[str, Any]]:
+    base = [
+        {
+            "app_name": "아이디어 스파크",
+            "one_line": "하루 고민을 입력하면 AI가 해결 루트를 제안하는 코치 앱",
+            "core_features": ["감정 분석", "행동 플랜 생성", "격려 멘트 카드"],
+            "ui_points": ["이모지 반응", "진행도 바", "결과 카드"],
+            "github_mission": "README에 사용 시나리오 GIF 넣기",
+            "deploy_tip": "Secrets에 GEMINI_API_KEY 등록",
+        },
+        {
+            "app_name": "나만의 퀴즈 메이커",
+            "one_line": "주제 입력 시 개인 맞춤 퀴즈를 자동 생성하는 학습 앱",
+            "core_features": ["난이도 선택", "즉시 채점", "오답 리포트"],
+            "ui_points": ["탭 분리", "점수 배지", "재도전 버튼"],
+            "github_mission": "Issues로 개선 아이디어 3개 작성",
+            "deploy_tip": "첫 화면에 사용법 3줄 배치",
+        },
+        {
+            "app_name": "취향 여행 코디",
+            "one_line": "기분과 예산을 입력하면 여행 코스를 추천하는 플래너",
+            "core_features": ["조건 입력 폼", "추천 일정", "준비물 체크"],
+            "ui_points": ["2열 레이아웃", "체크박스", "하이라이트 카드"],
+            "github_mission": "커밋 메시지에 feat/fix/docs 규칙 적용",
+            "deploy_tip": "배포 후 모바일 화면 점검",
+        },
+    ]
+    results: List[Dict[str, Any]] = []
+    for idx in range(count):
+        item = base[idx % len(base)].copy()
+        item["app_name"] = f"{item['app_name']} - {topic} {idx + 1}"
+        results.append(item)
+    return results
 
 
-init_session_state()
+def generate_class_plan(theme: str, level: str, students: int, session_minutes: int, style: str) -> List[Dict[str, Any]]:
+    prompt = f"""
+너는 한국 고등학교/대학생 대상 AI 프로젝트 수업 코치다.
+주제는 '{theme}' 이고, 난이도는 '{level}', 학습자 수는 {students}명, 차시당 {session_minutes}분이다.
+진행 스타일은 '{style}'이다.
 
-st.markdown('<div class="main-title">🎬 MoodFlix AI - 감정 기반 영화 추천소</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">오늘의 기분을 고르면 Gemini가 맞춤 영화를 추천해드립니다.</div>', unsafe_allow_html=True)
+정확히 4개 원소를 가진 JSON 배열만 출력해라. 설명문 금지.
+각 원소는 다음 키를 가져야 한다:
+- session (예: 1차시)
+- goal
+- activities
+- deliverable
+- fun_point
+""".strip()
+
+    try:
+        raw = call_gemini(prompt, temperature=0.65)
+        parsed = parse_json_array(raw)
+        if not parsed or len(parsed) < 4:
+            return fallback_class_plan(theme)
+
+        safe_list: List[Dict[str, Any]] = []
+        for i in range(4):
+            item = parsed[i] if i < len(parsed) else {}
+            safe_list.append(
+                {
+                    "session": str(item.get("session", f"{i + 1}차시")),
+                    "goal": str(item.get("goal", "학습 목표 설정")),
+                    "activities": str(item.get("activities", "핵심 활동 진행")),
+                    "deliverable": str(item.get("deliverable", "결과물 정리")),
+                    "fun_point": str(item.get("fun_point", "흥미 요소 추가")),
+                }
+            )
+        return safe_list
+    except Exception:
+        return fallback_class_plan(theme)
+
+
+def generate_student_ideas(topic: str, level: str, count: int) -> List[Dict[str, Any]]:
+    prompt = f"""
+너는 웹앱 아이디어 멘토다.
+주제 키워드 '{topic}', 난이도 '{level}' 기준으로 학생 프로젝트 아이디어를 {count}개 제안해라.
+
+반드시 JSON 배열만 출력.
+각 원소 키:
+- app_name
+- one_line
+- core_features (문자열 배열 3개)
+- ui_points (문자열 배열 3개)
+- github_mission
+- deploy_tip
+""".strip()
+
+    try:
+        raw = call_gemini(prompt, temperature=0.8)
+        parsed = parse_json_array(raw)
+        if not parsed:
+            return fallback_student_ideas(topic, count)
+
+        safe_ideas: List[Dict[str, Any]] = []
+        for item in parsed[:count]:
+            core = item.get("core_features", [])
+            ui_points = item.get("ui_points", [])
+            if not isinstance(core, list):
+                core = [str(core)]
+            if not isinstance(ui_points, list):
+                ui_points = [str(ui_points)]
+
+            safe_ideas.append(
+                {
+                    "app_name": str(item.get("app_name", "프로젝트 아이디어")),
+                    "one_line": str(item.get("one_line", "학생 맞춤 웹앱 아이디어입니다.")),
+                    "core_features": [str(x) for x in core[:3]] if core else ["핵심 기능 1", "핵심 기능 2", "핵심 기능 3"],
+                    "ui_points": [str(x) for x in ui_points[:3]] if ui_points else ["사이드바", "컬럼", "버튼 상호작용"],
+                    "github_mission": str(item.get("github_mission", "커밋 메시지 규칙 적용")),
+                    "deploy_tip": str(item.get("deploy_tip", "Secrets 설정 확인")),
+                }
+            )
+
+        if len(safe_ideas) < count:
+            safe_ideas.extend(fallback_student_ideas(topic, count - len(safe_ideas)))
+        return safe_ideas[:count]
+    except Exception:
+        return fallback_student_ideas(topic, count)
+
+
+def export_plan_markdown(plan: List[Dict[str, Any]]) -> str:
+    lines = [
+        "# 4차시 수업 운영안",
+        "",
+        f"생성 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "",
+    ]
+    for row in plan:
+        lines.append(f"## {row['session']}")
+        lines.append(f"- 목표: {row['goal']}")
+        lines.append(f"- 활동: {row['activities']}")
+        lines.append(f"- 산출물: {row['deliverable']}")
+        lines.append(f"- 흥미 요소: {row['fun_point']}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+init_state()
+
+st.markdown('<div class="title">🚀 AI 웹앱 수업 메이커 (Gemini + GitHub + Streamlit)</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">학생들이 각자 원하는 웹앱을 4차시 안에 완성하도록 수업 흐름과 프로젝트 아이디어를 자동 설계합니다.</div>', unsafe_allow_html=True)
 
 with st.sidebar:
-    st.header("⚙️ 설정")
-    st.markdown("Gemini API 키는 `st.secrets` 또는 아래 입력창으로 설정할 수 있습니다.")
-
+    st.header("🔐 API 설정")
     secret_key = get_secret_api_key()
     if secret_key:
-        st.success("`st.secrets`에서 API 키를 감지했습니다.")
+        st.success("st.secrets에서 GEMINI_API_KEY를 찾았습니다.")
     else:
-        st.session_state.api_key_from_sidebar = st.text_input(
-            "Gemini API 키 입력",
+        st.session_state.api_key_sidebar = st.text_input(
+            "Gemini API 키",
             type="password",
-            value=st.session_state.api_key_from_sidebar,
-            placeholder="AIza... 형태의 키",
+            value=st.session_state.api_key_sidebar,
+            placeholder="AIza...",
+            help="없어도 앱은 예시 모드로 동작합니다.",
         )
 
-    temperature = st.slider("창의성(temperature)", 0.0, 1.0, 0.7, 0.1)
+    st.markdown("---")
+    st.subheader("🎛️ 수업 공통 옵션")
+    level = st.selectbox("학습 난이도", ["입문", "기초", "중급"], index=0)
+    students = st.slider("학생 수", 5, 40, 24)
+    session_minutes = st.slider("차시당 시간(분)", 30, 100, 50, 5)
+    style = st.selectbox("진행 스타일", ["자유 탐구형", "미션 챌린지형", "멘토링 중심형"], index=0)
+
+    st.markdown("---")
     if st.button("🧹 결과 초기화", use_container_width=True):
-        st.session_state.recommendations = []
-        st.session_state.last_query = {}
+        st.session_state.class_plan = []
+        st.session_state.student_ideas = []
         st.session_state.last_error = ""
-        st.toast("추천 결과를 초기화했습니다.", icon="🧼")
+        st.toast("결과를 초기화했습니다.", icon="🧼")
 
-col_left, col_right = st.columns([1, 2])
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("수업 차시", "4회")
+with col2:
+    st.metric("권장 팀 구성", "2~3인")
+with col3:
+    st.metric("핵심 스택", "Gemini+GitHub+Streamlit")
 
-with col_left:
-    st.subheader("📝 추천 조건 입력")
-    with st.form("recommend_form", clear_on_submit=False):
-        mood = st.selectbox("오늘 기분은 어떤가요?", ["설렘", "우울함", "스트레스", "평온함", "집중하고 싶음", "웃고 싶음", "감동 받고 싶음"], index=0)
-        mood_intensity = st.slider("감정 강도", 1, 10, 6)
-        preferred_genres = st.multiselect("선호 장르", ["드라마", "코미디", "스릴러", "SF", "로맨스", "애니메이션", "판타지", "다큐멘터리", "액션"], default=["드라마", "코미디"])
-        watch_time = st.selectbox("시청 가능 시간", ["60분 이내", "90분 이내", "120분 이내", "150분 이내", "시간 상관없음"], index=2)
-        language_pref = st.radio("언어 선호", ["한국어/자막 포함", "영어권", "아시아권", "상관없음"])
-        avoid_elements = st.text_area("피하고 싶은 요소(선택)", value="", placeholder="예: 잔인한 장면, 너무 무거운 결말", height=90)
-        count = st.slider("추천 개수", 3, 8, 5)
-        submit = st.form_submit_button("🚀 맞춤 추천 받기", use_container_width=True)
+main_tab, idea_tab, tracker_tab = st.tabs(["🧭 4차시 수업 설계", "💡 학생 아이디어 생성", "✅ GitHub/배포 체크리스트"])
 
-    if submit:
-        active_key = get_active_api_key()
-        if not active_key:
-            st.error("API 키가 없습니다. `st.secrets` 또는 사이드바 입력창에 키를 설정해 주세요.")
-        else:
-            user_input = {
-                "mood": mood,
-                "mood_intensity": mood_intensity,
-                "preferred_genres": preferred_genres,
-                "watch_time": watch_time,
-                "avoid_elements": avoid_elements,
-                "language_pref": language_pref,
-                "count": count,
-            }
-            st.session_state.last_query = user_input
-            with st.spinner("Gemini가 취향을 분석하는 중입니다..."):
-                try:
-                    results = call_gemini(active_key, build_prompt(user_input), temperature)
-                    st.session_state.recommendations = results
-                    st.session_state.last_error = ""
-                    st.balloons()
-                except Exception as exc:
-                    st.session_state.last_error = str(exc)
-                    st.session_state.recommendations = []
+with main_tab:
+    st.subheader("수업 운영안 자동 생성")
+    theme = st.text_input("수업 전체 테마", value="학생 맞춤 AI 웹앱 제작", placeholder="예: 진로 탐색, 생활 문제 해결, 학습 도우미")
 
-with col_right:
-    tab1, tab2, tab3 = st.tabs(["🎯 추천 결과", "⭐ 찜 목록", "📘 사용 가이드"])
+    if st.button("4차시 운영안 만들기", type="primary", use_container_width=True):
+        with st.spinner("수업 운영안을 구성하고 있습니다..."):
+            plan = generate_class_plan(theme, level, students, session_minutes, style)
+            st.session_state.class_plan = plan
+            st.session_state.last_error = ""
 
-    with tab1:
-        if st.session_state.last_query:
-            q = st.session_state.last_query
-            st.caption(f"최근 요청: 기분={q['mood']} | 강도={q['mood_intensity']} | 시간={q['watch_time']} | 추천개수={q['count']}")
-        if st.session_state.last_error:
-            st.error(f"오류: {st.session_state.last_error}")
-        render_recommendation_cards(st.session_state.recommendations)
+    if st.session_state.class_plan:
+        for row in st.session_state.class_plan:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown(f"### {row['session']} - {row['goal']}")
+            st.markdown(f"- **핵심 활동**: {row['activities']}")
+            st.markdown(f"- **산출물**: {row['deliverable']}")
+            st.markdown(f"- **흥미 요소**: {row['fun_point']}")
+            st.markdown("</div>", unsafe_allow_html=True)
 
-    with tab2:
-        render_favorites(st.session_state.favorites)
-        if st.session_state.favorites and st.button("🗑️ 찜 목록 비우기"):
-            st.session_state.favorites = []
-            st.toast("찜 목록을 비웠습니다.", icon="🧺")
+        md_text = export_plan_markdown(st.session_state.class_plan)
+        st.download_button(
+            "📥 운영안 Markdown 다운로드",
+            data=md_text,
+            file_name="class_plan_4_sessions.md",
+            mime="text/markdown",
+            use_container_width=True,
+        )
+    else:
+        st.info("테마를 입력하고 '4차시 운영안 만들기'를 눌러주세요.")
 
-    with tab3:
-        st.markdown("### 빠른 사용법")
-        st.markdown("1) 왼쪽에서 기분/장르/시간을 입력합니다.")
-        st.markdown("2) `맞춤 추천 받기` 버튼을 누릅니다.")
-        st.markdown("3) 마음에 드는 영화를 `찜하기`로 저장합니다.")
-        st.markdown("4) 배포 시에는 API 키를 Secrets로 관리합니다.")
-        st.code('GEMINI_API_KEY = "여기에_본인_API_키"', language="toml")
-        st.caption(f"현재 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+with idea_tab:
+    st.subheader("학생별 프로젝트 아이디어 뽑기")
+    topic = st.text_input("키워드/주제", value="영화 추천", placeholder="예: 고민 상담소, 영단어 암기장, 진로 탐색")
+    idea_count = st.slider("생성 개수", 3, 10, 5)
+
+    if st.button("아이디어 생성", type="primary", use_container_width=True):
+        with st.spinner("학생용 프로젝트 아이디어를 생성하는 중입니다..."):
+            ideas = generate_student_ideas(topic, level, idea_count)
+            st.session_state.student_ideas = ideas
+            st.balloons()
+
+    if st.session_state.student_ideas:
+        for idx, item in enumerate(st.session_state.student_ideas, start=1):
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown(f"### {idx}. {item['app_name']}")
+            st.markdown(f"**한 줄 설명**: {item['one_line']}")
+            st.markdown("**핵심 기능 3가지**")
+            for feature in item["core_features"]:
+                st.markdown(f"- {feature}")
+            st.markdown("**UI 포인트 3가지**")
+            for point in item["ui_points"]:
+                st.markdown(f"- {point}")
+            st.markdown(f"**GitHub 미션**: {item['github_mission']}")
+            st.markdown(f"**배포 팁**: {item['deploy_tip']}")
+            st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.info("키워드를 입력하고 '아이디어 생성'을 눌러주세요.")
+
+with tracker_tab:
+    st.subheader("수업 운영 체크리스트")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("### GitHub 체크")
+        st.checkbox("학생별 저장소 생성 완료", key="g1")
+        st.checkbox("커밋 메시지 규칙(feat/fix/docs) 설명 완료", key="g2")
+        st.checkbox("README에 실행 방법 작성 완료", key="g3")
+        st.checkbox("최종 코드 push 완료", key="g4")
+
+    with c2:
+        st.markdown("### Streamlit 배포 체크")
+        st.checkbox("Streamlit Community Cloud 연결", key="d1")
+        st.checkbox("Main file path 설정(webapp/app.py 또는 app.py)", key="d2")
+        st.checkbox("Secrets에 GEMINI_API_KEY 등록", key="d3")
+        st.checkbox("배포 URL 공유 및 발표 완료", key="d4")
+
+    progress_items = [
+        st.session_state.get("g1", False),
+        st.session_state.get("g2", False),
+        st.session_state.get("g3", False),
+        st.session_state.get("g4", False),
+        st.session_state.get("d1", False),
+        st.session_state.get("d2", False),
+        st.session_state.get("d3", False),
+        st.session_state.get("d4", False),
+    ]
+    done = sum(1 for x in progress_items if x)
+    ratio = done / len(progress_items)
+
+    st.markdown("### 진행도")
+    st.progress(ratio)
+    st.caption(f"완료 {done}/8 | {int(ratio * 100)}% 진행")
+
+st.caption(f"마지막 업데이트: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
