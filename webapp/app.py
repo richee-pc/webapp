@@ -1,10 +1,10 @@
 import json
 import re
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import google.generativeai as genai
+import gspread
 import streamlit as st
 
 
@@ -38,8 +38,6 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-
-LINK_BOARD_PATH = Path(__file__).resolve().parent / "shared_links.json"
 
 
 def init_state() -> None:
@@ -338,116 +336,67 @@ def process_flow_markdown() -> str:
     )
 
 
-def build_presentation_markdown(
-    app_name: str,
-    one_line: str,
-    features: List[str],
-    github_url: str,
-    deploy_url: str,
-    challenge: str,
-    improvement: str,
-) -> str:
-    feature_lines = [f"- {f.strip()}" for f in features if f.strip()]
-    if not feature_lines:
-        feature_lines = ["- 핵심 기능을 1개 이상 작성해 주세요."]
-
-    return "\n".join(
-        [
-            f"# {app_name or '내 웹앱 프로젝트'}",
-            "",
-            "## 한 줄 소개",
-            one_line or "한 줄 소개를 작성해 주세요.",
-            "",
-            "## 핵심 기능",
-            *feature_lines,
-            "",
-            "## 프로젝트 링크",
-            f"- GitHub: {github_url or '링크를 입력해 주세요.'}",
-            f"- 배포 URL: {deploy_url or '링크를 입력해 주세요.'}",
-            "",
-            "## 만들면서 어려웠던 점",
-            challenge or "어려웠던 점을 작성해 주세요.",
-            "",
-            "## 다음 버전에서 개선할 점",
-            improvement or "개선할 점을 작성해 주세요.",
-            "",
-            f"_작성 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}_",
-        ]
-    )
-
-
-def build_presentation_script(
-    app_name: str,
-    one_line: str,
-    features: List[str],
-    deploy_url: str,
-) -> str:
-    clean_features = [f.strip() for f in features if f.strip()]
-    top_features = clean_features[:3] if clean_features else ["핵심 기능"]
-
-    return (
-        f"안녕하세요. 저희가 만든 앱은 '{app_name or '내 웹앱'}' 입니다. "
-        f"이 앱은 {one_line or '학생이 직접 문제를 해결하도록 돕는 웹앱'} 를 목표로 만들었습니다. "
-        f"특히 {', '.join(top_features)} 기능을 구현했습니다. "
-        f"배포 주소는 {deploy_url or '배포 주소 입력 예정'} 이고, 발표 후 피드백을 반영해 더 개선하겠습니다."
-    )
-
-
 def is_valid_http_url(url: str) -> bool:
     return bool(re.match(r"^https?://[^\s]+$", url.strip()))
 
 
-def load_shared_links() -> List[Dict[str, str]]:
-    if not LINK_BOARD_PATH.exists():
-        return []
+def _get_google_sheet() -> gspread.Worksheet:
+    spreadsheet_id = st.secrets["GOOGLE_SHEETS_SPREADSHEET_ID"]
+
+    if "GOOGLE_SERVICE_ACCOUNT" in st.secrets:
+        service_account_info = dict(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
+    elif "GOOGLE_SERVICE_ACCOUNT_JSON" in st.secrets:
+        service_account_info = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT_JSON"])
+    else:
+        raise ValueError("Google 서비스 계정 정보가 secrets에 없습니다.")
+
+    client = gspread.service_account_from_dict(service_account_info)
+    spreadsheet = client.open_by_key(spreadsheet_id)
+
     try:
-        content = json.loads(LINK_BOARD_PATH.read_text(encoding="utf-8"))
-        if isinstance(content, list):
-            safe_rows = []
-            for row in content:
-                if not isinstance(row, dict):
-                    continue
-                safe_rows.append(
-                    {
-                        "student": str(row.get("student", "익명")),
-                        "app_name": str(row.get("app_name", "이름 없는 앱")),
-                        "url": str(row.get("url", "")),
-                        "memo": str(row.get("memo", "")),
-                        "submitted_at": str(row.get("submitted_at", "")),
-                    }
-                )
-            return safe_rows
-    except Exception:
-        return []
-    return []
+        worksheet = spreadsheet.worksheet("shared_links")
+    except gspread.WorksheetNotFound:
+        worksheet = spreadsheet.add_worksheet(title="shared_links", rows=200, cols=8)
+        worksheet.append_row(["student", "app_name", "url", "memo", "submitted_at"])
 
-
-def save_shared_links(rows: List[Dict[str, str]]) -> None:
-    LINK_BOARD_PATH.write_text(
-        json.dumps(rows, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    return worksheet
 
 
 def add_shared_link(student: str, app_name: str, url: str, memo: str) -> None:
-    rows = load_shared_links()
-    clean_url = url.strip()
+    ws = _get_google_sheet()
+    records = ws.get_all_records()
 
-    # 같은 URL 중복 제출 방지
-    if any(r.get("url", "").strip() == clean_url for r in rows):
+    clean_url = url.strip()
+    if any(str(r.get("url", "")).strip() == clean_url for r in records):
         raise ValueError("이미 제출된 링크입니다. 다른 링크를 입력해 주세요.")
 
-    rows.insert(
-        0,
-        {
-            "student": student.strip(),
-            "app_name": app_name.strip(),
-            "url": clean_url,
-            "memo": memo.strip(),
-            "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        },
-    )
-    save_shared_links(rows)
+    ws.append_row([
+        student.strip(),
+        app_name.strip(),
+        clean_url,
+        memo.strip(),
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    ])
+
+
+def load_shared_links() -> List[Dict[str, str]]:
+    ws = _get_google_sheet()
+    records = ws.get_all_records()
+
+    rows: List[Dict[str, str]] = []
+    for r in records:
+        rows.append(
+            {
+                "student": str(r.get("student", "익명")),
+                "app_name": str(r.get("app_name", "이름 없는 앱")),
+                "url": str(r.get("url", "")),
+                "memo": str(r.get("memo", "")),
+                "submitted_at": str(r.get("submitted_at", "")),
+            }
+        )
+
+    rows.sort(key=lambda x: x.get("submitted_at", ""), reverse=True)
+    return rows
 
 
 init_state()
@@ -500,7 +449,7 @@ tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
         "3. HTML/app.py 생성법",
         "4. GitHub 업로드",
         "5. Streamlit 배포",
-        "6. 발표/공유",
+        "6. 링크 공유 보드",
     ]
 )
 
@@ -672,63 +621,10 @@ with tab5:
     st.caption(f"배포 준비도: {done}/4 ({int(ratio * 100)}%)")
 
 with tab6:
-    st.subheader("발표/공유 탭")
-    st.markdown('<div class="tip">여기에 배포 링크를 제출하면 친구들이 같은 공간에서 바로 들어가볼 수 있어요.</div>', unsafe_allow_html=True)
+    st.subheader("링크 공유 보드 (Google Sheets 연동)")
+    st.markdown('<div class="tip">여기에 제출된 링크는 같은 스프레드시트에 저장되어 친구들이 모두 볼 수 있어요.</div>', unsafe_allow_html=True)
 
-    p1, p2 = st.columns(2)
-    with p1:
-        app_name = st.text_input("앱 이름", value=st.session_state.selected_idea.split("\n")[0] if st.session_state.selected_idea else "")
-        one_line = st.text_input("한 줄 소개", value="학생 문제를 해결하는 AI 웹앱")
-        feature_text = st.text_area(
-            "핵심 기능(줄바꿈으로 입력)",
-            value=st.session_state.selected_features.replace(", ", "\n") if st.session_state.selected_features else "",
-            height=120,
-        )
-    with p2:
-        github_url = st.text_input("GitHub 링크", value="")
-        deploy_url = st.text_input("배포 링크", value="")
-        challenge = st.text_area("어려웠던 점", value="", height=80)
-        improvement = st.text_area("다음에 개선할 점", value="", height=80)
-
-    features = [line.strip() for line in feature_text.splitlines() if line.strip()]
-    report_md = build_presentation_markdown(
-        app_name,
-        one_line,
-        features,
-        github_url,
-        deploy_url,
-        challenge,
-        improvement,
-    )
-    script_text = build_presentation_script(app_name, one_line, features, deploy_url)
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 30초 발표 스크립트")
-    st.code(script_text, language="text")
-    st.download_button(
-        "발표 스크립트 다운로드",
-        data=script_text,
-        file_name="presentation_script.txt",
-        mime="text/plain",
-        use_container_width=True,
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 제출용 Markdown")
-    st.code(report_md, language="markdown")
-    st.download_button(
-        "제출용 Markdown 다운로드",
-        data=report_md,
-        file_name="project_submission.md",
-        mime="text/markdown",
-        use_container_width=True,
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 🌐 우리반 웹앱 공유 보드")
-
+    st.markdown("### 제출 폼")
     with st.form("link_submit_form", clear_on_submit=True):
         student_name = st.text_input("이름/닉네임")
         shared_app_name = st.text_input("공유할 앱 이름")
@@ -744,26 +640,47 @@ with tab6:
         else:
             try:
                 add_shared_link(student_name, shared_app_name, shared_url, shared_memo)
-                st.success("공유 보드에 등록 완료! 아래 목록에서 확인해 보세요.")
+                st.success("공유 보드 등록 완료! 아래 목록에서 확인해 보세요.")
                 st.toast("링크 제출 성공", icon="🎉")
             except Exception as exc:
-                st.error(str(exc))
+                st.error(f"저장 실패: {exc}")
 
-    links = load_shared_links()
-    st.caption(f"총 {len(links)}개의 앱이 공유되어 있어요.")
+    st.markdown("### 우리반 앱 목록")
+    try:
+        links = load_shared_links()
+        st.caption(f"총 {len(links)}개의 앱이 공유되어 있어요.")
 
-    if links:
-        for i, row in enumerate(links, start=1):
-            st.markdown(f"**{i}. {row['app_name']}**")
-            st.markdown(f"- 만든 사람: {row['student']}")
-            if row.get("memo", "").strip():
-                st.markdown(f"- 소개: {row['memo']}")
-            st.markdown(f"- 배포 링크: [바로 들어가기]({row['url']})")
-            st.caption(f"제출 시각: {row['submitted_at']}")
-            st.markdown("---")
-    else:
-        st.info("아직 공유된 링크가 없습니다. 첫 번째로 등록해 보세요!")
+        if links:
+            for i, row in enumerate(links, start=1):
+                st.markdown(f"**{i}. {row['app_name']}**")
+                st.markdown(f"- 만든 사람: {row['student']}")
+                if row.get("memo", "").strip():
+                    st.markdown(f"- 소개: {row['memo']}")
+                st.markdown(f"- 배포 링크: [바로 들어가기]({row['url']})")
+                st.caption(f"제출 시각: {row['submitted_at']}")
+                st.markdown("---")
+        else:
+            st.info("아직 공유된 링크가 없습니다. 첫 번째로 등록해 보세요!")
+    except Exception as exc:
+        st.warning("Google Sheets 연결 정보가 아직 없거나 접근 권한이 없습니다.")
+        st.code(
+            """# .streamlit/secrets.toml 예시
+GEMINI_API_KEY = "YOUR_GEMINI_KEY"
+GOOGLE_SHEETS_SPREADSHEET_ID = "YOUR_SPREADSHEET_ID"
 
-    st.markdown("</div>", unsafe_allow_html=True)
+[GOOGLE_SERVICE_ACCOUNT]
+type = "service_account"
+project_id = "..."
+private_key_id = "..."
+private_key = "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n"
+client_email = "...@....iam.gserviceaccount.com"
+client_id = "..."
+auth_uri = "https://accounts.google.com/o/oauth2/auth"
+token_uri = "https://oauth2.googleapis.com/token"
+auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
+client_x509_cert_url = "...""",
+            language="toml",
+        )
+        st.caption(f"연결 오류: {exc}")
 
 st.caption(f"업데이트 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

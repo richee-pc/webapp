@@ -12,10 +12,9 @@
   - HTML → app.py 변환 프롬프트
 - GitHub 업로드 가이드
 - Streamlit 배포 가이드
-- 발표/공유 탭
-  - 30초 발표 스크립트 자동 생성
-  - 제출용 Markdown 자동 생성 및 다운로드
-  - 학생 배포 링크 제출 + 클래스 공유 보드
+- Google Sheets 연동 링크 공유 보드
+  - 학생 배포 링크 제출
+  - 전체 학생 링크 모아보기
 
 ## 실행
 
@@ -28,12 +27,25 @@ pip install -r webapp/requirements.txt
 streamlit run webapp/app.py
 ```
 
-## API 키 설정
+## API 및 시트 연동 설정
 
-`.streamlit/secrets.toml`
+`.streamlit/secrets.toml` 예시:
 
 ```toml
-GEMINI_API_KEY = "여기에_본인_API_키"
+GEMINI_API_KEY = "YOUR_GEMINI_KEY"
+GOOGLE_SHEETS_SPREADSHEET_ID = "YOUR_SPREADSHEET_ID"
+
+[GOOGLE_SERVICE_ACCOUNT]
+type = "service_account"
+project_id = "..."
+private_key_id = "..."
+private_key = "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n"
+client_email = "...@....iam.gserviceaccount.com"
+client_id = "..."
+auth_uri = "https://accounts.google.com/o/oauth2/auth"
+token_uri = "https://oauth2.googleapis.com/token"
+auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
+client_x509_cert_url = "..."
 ```
 
 ## 배포 시 메인 파일 경로
