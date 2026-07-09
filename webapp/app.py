@@ -398,7 +398,6 @@ def init_state() -> None:
         "selected_design": "",
         "prompt_pack": {},
         "topic_input": "학교 생활",
-        "interest_input": "게임, 음악, 친구, 진로",
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -481,48 +480,121 @@ def call_gemini(prompt: str, temperature: float = 0.8) -> str:
     return text
 
 
-def fallback_ideas(topic: str, count: int) -> List[Dict[str, Any]]:
-    base = [
+def normalize_topic(topic: str) -> str:
+    cleaned = topic.strip()
+    return cleaned if cleaned else "학교 생활"
+
+
+def build_topic_idea_templates(topic: str) -> List[Dict[str, Any]]:
+    t = normalize_topic(topic)
+    return [
         {
-            "app_name": "시험 루틴 레벨업",
-            "target_user": "시험 준비 학생",
-            "problem": "계획은 있지만 꾸준히 실천하기 어렵다",
-            "core_features": ["오늘 할 일 자동 추천", "집중 타이머", "달성률 시각화"],
-            "fun_ui": ["레벨 배지", "이모지 피드백", "진행도 바"],
-            "mini_mission": "7일 연속 달성 챌린지",
+            "app_name": f"{t} 루틴 트래커",
+            "target_user": f"{t}을(를) 꾸준히 하고 싶은 학생",
+            "problem": f"{t} 관련 계획은 세우지만 실행과 기록이 잘 안 된다",
+            "core_features": [f"{t} 일지 작성", "목표 달성률 차트", "주간 리포트"],
+            "fun_ui": ["레벨업 배지", "달성 스트릭", "진행도 바"],
+            "mini_mission": f"7일 {t} 챌린지",
         },
         {
-            "app_name": "진로 궁금해 AI",
-            "target_user": "진로 고민 학생",
-            "problem": "나에게 맞는 진로 정보를 찾기 어렵다",
-            "core_features": ["관심사 질문", "진로 추천", "실천 로드맵"],
-            "fun_ui": ["카드형 결과", "탭 탐색", "진로 매칭 점수"],
-            "mini_mission": "친구와 진로 결과 비교",
+            "app_name": f"{t} 꿀팁 & 정보 허브",
+            "target_user": f"{t}에 관심 있는 학생",
+            "problem": f"{t}에 대한 유용한 정보를 한곳에서 찾기 어렵다",
+            "core_features": [f"{t} 핵심 정보 카드", "키워드 검색", "즐겨찾기 저장"],
+            "fun_ui": ["카드형 레이아웃", "태그 필터", "랭킹 뱃지"],
+            "mini_mission": f"친구에게 {t} 꿀팁 공유",
         },
         {
-            "app_name": "학교생활 고민 힐링소",
-            "target_user": "일상 고민이 있는 학생",
-            "problem": "고민을 정리하고 행동으로 옮기기 어렵다",
-            "core_features": ["고민 분류", "해결 아이디어", "실천 체크리스트"],
-            "fun_ui": ["감정 버튼", "응원 카드", "체크 애니메이션"],
-            "mini_mission": "응원 문장 뽑기 기능",
+            "app_name": f"{t} 퀴즈 챌린지",
+            "target_user": f"{t}을(를) 재미있게 익히고 싶은 학생",
+            "problem": f"{t} 관련 지식을 암기만 하고 재미있게 학습하기 어렵다",
+            "core_features": [f"{t} 퀴즈 출제", "점수·랭킹 기록", "오답 노트"],
+            "fun_ui": ["타이머 바", "콤보 점수", "결과 애니메이션"],
+            "mini_mission": f"{t} 만점 도전",
+        },
+        {
+            "app_name": f"{t} 고민 상담소",
+            "target_user": f"{t} 때문에 고민이 있는 학생",
+            "problem": f"{t}과(와) 관련된 고민을 정리하고 해결책을 찾기 어렵다",
+            "core_features": ["고민 유형 선택", f"{t} 맞춤 해결 팁", "실천 체크리스트"],
+            "fun_ui": ["감정 버튼", "응원 카드", "완료 체크"],
+            "mini_mission": f"{t} 고민 1개 해결하기",
+        },
+        {
+            "app_name": f"{t} 팀 · 크루 매칭",
+            "target_user": f"{t}을(를) 함께할 친구를 찾는 학생",
+            "problem": f"{t}에 같이할 사람을 찾고 일정을 맞추기 어렵다",
+            "core_features": ["관심 태그 등록", "팀원 모집 게시", "일정 투표"],
+            "fun_ui": ["프로필 카드", "매칭 점수", "채팅 링크 버튼"],
+            "mini_mission": f"{t} 팀 1개 만들기",
+        },
+        {
+            "app_name": f"{t} 목표 달성 보드",
+            "target_user": f"{t}에서 성과를 내고 싶은 학생",
+            "problem": f"{t} 목표는 있지만 진행 상황을 한눈에 보기 어렵다",
+            "core_features": ["목표 설정", "단계별 체크", "성취 통계"],
+            "fun_ui": ["대시보드", "메달 컬렉션", "그래프 차트"],
+            "mini_mission": f"{t} 목표 3단계 클리어",
+        },
+        {
+            "app_name": f"{t} 아이디어 메이커",
+            "target_user": f"{t} 분야에서 새 시도를 하고 싶은 학생",
+            "problem": f"{t}와(과) 관련된 새로운 아이디어를 구체화하기 어렵다",
+            "core_features": ["아이디어 입력", "기능 추천", "실행 플랜 생성"],
+            "fun_ui": ["랜덤 카드", "스와이프 선택", "결과 요약"],
+            "mini_mission": f"{t} 아이디어 1개 구체화",
+        },
+        {
+            "app_name": f"{t} 기록 아카이브",
+            "target_user": f"{t} 활동을 모아두고 싶은 학생",
+            "problem": f"{t} 관련 순간과 기록이 흩어져서 정리가 안 된다",
+            "core_features": ["사진·메모 업로드", "날짜별 타임라인", "태그 분류"],
+            "fun_ui": ["갤러리 뷰", "필터 탭", "하이라이트 배지"],
+            "mini_mission": f"{t} 기록 5개 모으기",
         },
     ]
 
+
+def fallback_ideas(topic: str, count: int) -> List[Dict[str, Any]]:
+    templates = build_topic_idea_templates(topic)
     out: List[Dict[str, Any]] = []
     for i in range(count):
-        item = base[i % len(base)].copy()
-        item["app_name"] = f"{item['app_name']} - {topic} {i + 1}"
-        out.append(item)
+        out.append(templates[i % len(templates)].copy())
     return out
 
 
-def generate_ideas(topic: str, interests: str, count: int) -> List[Dict[str, Any]]:
+def idea_mentions_topic(idea: Dict[str, Any], topic: str) -> bool:
+    t = normalize_topic(topic)
+    if t == "학교 생활":
+        return True
+    blob = " ".join(
+        [
+            str(idea.get("app_name", "")),
+            str(idea.get("target_user", "")),
+            str(idea.get("problem", "")),
+            " ".join(idea.get("core_features", [])),
+            " ".join(idea.get("fun_ui", [])),
+            str(idea.get("mini_mission", "")),
+        ]
+    )
+    return t in blob
+
+
+def generate_ideas(topic: str, count: int) -> List[Dict[str, Any]]:
+    t = normalize_topic(topic)
     prompt = f"""
-너는 학생 프로젝트 아이디어 코치야.
-주제 키워드: {topic}
-관심사: {interests}
-개수: {count}
+너는 고등학생 웹앱 프로젝트 아이디어 코치다.
+
+# 입력
+- 주제 키워드: {t}
+- 생성 개수: {count}
+
+# 필수 규칙 (반드시 지킬 것)
+1) 모든 아이디어는 주제 키워드 "{t}"와 직접적으로 연관되어야 한다.
+2) app_name, problem, core_features 안에 주제 "{t}"가 자연스럽게 드러나야 한다.
+3) 주제와 무관한 일반 앱(시험, 진로, 힐링 등)은 절대 제안하지 마라.
+4) 고등학생이 Streamlit/HTML로 만들 수 있는 수준의 단순한 웹앱 아이디어로 제한한다.
+5) 서로 다른 관점의 아이디어를 제안한다. (기록, 정보, 퀴즈, 팀, 목표 등)
 
 반드시 JSON 배열만 출력하고 다른 텍스트는 금지.
 각 원소 키:
@@ -535,10 +607,10 @@ def generate_ideas(topic: str, interests: str, count: int) -> List[Dict[str, Any
 """.strip()
 
     try:
-        raw = call_gemini(prompt, temperature=0.85)
+        raw = call_gemini(prompt, temperature=0.55)
         parsed = parse_json_array(raw)
         if not parsed:
-            return fallback_ideas(topic, count)
+            return fallback_ideas(t, count)
 
         cleaned: List[Dict[str, Any]] = []
         for item in parsed[:count]:
@@ -549,22 +621,24 @@ def generate_ideas(topic: str, interests: str, count: int) -> List[Dict[str, Any
             if not isinstance(ui, list):
                 ui = [str(ui)]
 
-            cleaned.append(
-                {
-                    "app_name": str(item.get("app_name", "학생 맞춤 웹앱")),
-                    "target_user": str(item.get("target_user", "학생")),
-                    "problem": str(item.get("problem", "문제 정의 필요")),
-                    "core_features": [str(x) for x in core[:3]] if core else ["기능1", "기능2", "기능3"],
-                    "fun_ui": [str(x) for x in ui[:3]] if ui else ["사이드바", "버튼", "결과 카드"],
-                    "mini_mission": str(item.get("mini_mission", "작은 미션 하나 추가")),
-                }
-            )
+            idea = {
+                "app_name": str(item.get("app_name", f"{t} 웹앱")),
+                "target_user": str(item.get("target_user", "학생")),
+                "problem": str(item.get("problem", f"{t} 관련 문제")),
+                "core_features": [str(x) for x in core[:3]] if core else [f"{t} 기능1", f"{t} 기능2", f"{t} 기능3"],
+                "fun_ui": [str(x) for x in ui[:3]] if ui else ["카드 UI", "버튼", "결과 화면"],
+                "mini_mission": str(item.get("mini_mission", f"{t} 미션")),
+            }
+            if idea_mentions_topic(idea, t):
+                cleaned.append(idea)
 
         if len(cleaned) < count:
-            cleaned.extend(fallback_ideas(topic, count - len(cleaned)))
+            extras = fallback_ideas(t, count - len(cleaned))
+            cleaned.extend(extras)
+
         return cleaned[:count]
     except Exception:
-        return fallback_ideas(topic, count)
+        return fallback_ideas(t, count)
 
 
 def fill_prompt_from_idea(idea: Dict[str, Any]) -> None:
@@ -1007,19 +1081,16 @@ with tab0:
 
 with tab1:
     st.markdown('<p class="section-head"><span>//</span>아이디어 추천</p>', unsafe_allow_html=True)
-    c1, c2 = st.columns(2)
-    with c1:
-        st.session_state.topic_input = st.text_input("주제/키워드", value=st.session_state.topic_input)
-    with c2:
-        st.session_state.interest_input = st.text_input("관심사", value=st.session_state.interest_input)
+    st.session_state.topic_input = st.text_input(
+        "주제 키워드",
+        value=st.session_state.topic_input,
+        placeholder="예: 축구, 밴드, 게임, 진로, 시험 공부",
+        help="입력한 키워드와 직접 연관된 웹앱 아이디어를 추천해요.",
+    )
 
     count = st.slider("추천 개수", 3, 10, 5)
     if st.button("🔥 아이디어 뽑기", type="primary", use_container_width=True):
-        st.session_state.ideas = generate_ideas(
-            st.session_state.topic_input,
-            st.session_state.interest_input,
-            count,
-        )
+        st.session_state.ideas = generate_ideas(st.session_state.topic_input, count)
 
     if st.session_state.ideas:
         st.markdown('<div class="tip">마음에 드는 카드에서 <b>이 아이디어 선택</b> → 프롬프트 탭에 자동 입력</div>', unsafe_allow_html=True)
