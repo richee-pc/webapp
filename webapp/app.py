@@ -202,7 +202,51 @@ GLOBAL_STYLES = """
     color: #b6c4d8;
 }
 
-.idea-card { position: relative; padding-top: 1.4rem; }
+.idea-card { position: relative; padding-top: 1.4rem; margin-bottom: 0 !important; }
+.idea-list-item { margin-bottom: 0.15rem; }
+.idea-list-item + div[data-testid="stVerticalBlock"] .stButton {
+    margin-top: -0.35rem !important;
+    margin-bottom: 0.55rem !important;
+}
+
+/* Streamlit 기본 흰 배경 제거 */
+[data-testid="stAppViewContainer"] [data-testid="stMain"] [data-testid="stVerticalBlock"] > div,
+[data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stMarkdownContainer"],
+.stElementContainer,
+.element-container,
+.stMarkdown,
+.stButton,
+.stButton > div {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+[data-testid="stVerticalBlockBorderWrapper"] {
+    border: none !important;
+    padding: 0 !important;
+}
+.stTabs [data-baseweb="tab-panel"] [data-testid="stVerticalBlock"] {
+    gap: 0.35rem !important;
+}
+
+.ai-badge {
+    display: inline-block;
+    font-family: var(--font-ui);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: #6ee7b7;
+    background: rgba(52, 211, 153, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.28);
+    padding: 0.22rem 0.65rem;
+    border-radius: 999px;
+    margin-bottom: 0.65rem;
+}
+.ai-badge.off {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.08);
+    border-color: rgba(148, 163, 184, 0.2);
+}
 .idea-rank {
     position: absolute;
     top: 0.9rem; right: 1rem;
@@ -400,6 +444,7 @@ def init_state() -> None:
         "topic_input": "학교 생활",
         "idea_input": "",
         "refined_ideas": [],
+        "gemini_api_key": "",
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -417,7 +462,50 @@ def get_secret_api_key() -> Optional[str]:
 
 
 def get_active_api_key() -> Optional[str]:
-    return get_secret_api_key()
+    secret_key = get_secret_api_key()
+    if secret_key:
+        return secret_key
+    typed = str(st.session_state.get("gemini_api_key", "")).strip()
+    return typed if typed else None
+
+
+def has_gemini_api() -> bool:
+    return get_active_api_key() is not None
+
+
+def render_gemini_api_panel() -> None:
+    secret_key = get_secret_api_key()
+    with st.expander("⚡ Gemini AI 연동 (선택 · 더 좋은 결과)", expanded=not secret_key):
+        if secret_key:
+            st.markdown(
+                '<span class="ai-badge">AI MODE · ON (배포 secrets 연동)</span>',
+                unsafe_allow_html=True,
+            )
+            st.caption("Streamlit secrets에 API 키가 설정되어 AI 고품질 모드로 동작합니다.")
+        else:
+            if has_gemini_api():
+                st.markdown('<span class="ai-badge">AI MODE · ON</span>', unsafe_allow_html=True)
+            else:
+                st.markdown('<span class="ai-badge off">BASIC MODE · API 없음</span>', unsafe_allow_html=True)
+                st.caption("API 키 없이도 기본 템플릿으로 동작합니다. 키를 입력하면 AI가 맞춤 아이디어를 생성해요.")
+            st.session_state.gemini_api_key = st.text_input(
+                "Gemini API 키",
+                type="password",
+                value=st.session_state.gemini_api_key,
+                placeholder="AIza...",
+                help="Google AI Studio에서 발급받은 키를 입력하세요.",
+            )
+            st.caption("선생님이 배포 시 secrets에 `GEMINI_API_KEY`를 넣으면 학생들이 따로 입력하지 않아도 됩니다.")
+
+
+def render_idea_list(ideas: List[Dict[str, Any]], key_prefix: str, button_label: str) -> None:
+    for i, idea in enumerate(ideas, start=1):
+        st.markdown(
+            f'<div class="idea-list-item">{render_idea_card_html(idea, i)}</div>',
+            unsafe_allow_html=True,
+        )
+        if st.button(button_label, key=f"{key_prefix}_{i}", use_container_width=True):
+            fill_prompt_from_idea(idea)
 
 
 def normalize_json(raw: str) -> str:
@@ -632,7 +720,7 @@ def call_gemini(prompt: str, temperature: float = 0.8) -> str:
         raise ValueError("Gemini API 키가 없습니다.")
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
     response = model.generate_content(
         prompt,
         generation_config={
@@ -1295,26 +1383,8 @@ with tab0:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab1:
-    st.markdown('<p class="section-head"><span>//</span>키워드로 아이디어 뽑기</p>', unsafe_allow_html=True)
-    st.session_state.topic_input = st.text_input(
-        "주제 키워드",
-        value=st.session_state.topic_input,
-        placeholder="예: 축구, 밴드, 게임, 진로, 시험 공부",
-        help="입력한 키워드와 직접 연관된 웹앱 아이디어를 추천해요.",
-    )
+    render_gemini_api_panel()
 
-    count = st.slider("추천 개수", 3, 10, 5)
-    if st.button("🔥 아이디어 뽑기", type="primary", use_container_width=True):
-        st.session_state.ideas = generate_ideas(st.session_state.topic_input, count)
-
-    if st.session_state.ideas:
-        st.markdown('<div class="tip">마음에 드는 카드에서 <b>이 아이디어 선택</b> → 프롬프트 탭에 자동 입력</div>', unsafe_allow_html=True)
-        for i, idea in enumerate(st.session_state.ideas, start=1):
-            st.markdown(render_idea_card_html(idea, i), unsafe_allow_html=True)
-            if st.button("✅ 이 아이디어 선택", key=f"pick_{i}", use_container_width=True):
-                fill_prompt_from_idea(idea)
-
-    st.divider()
     st.markdown('<p class="section-head"><span>//</span>내 아이디어 구체화</p>', unsafe_allow_html=True)
     st.markdown(
         '<div class="tip">한 줄로 적은 아이디어를 <b>규칙 · 진행 방식 · 핵심 기능</b>까지 펼쳐줘요. '
@@ -1333,14 +1403,30 @@ with tab1:
         if not st.session_state.idea_input.strip():
             st.error("구체화할 아이디어를 한 줄로 입력해 주세요.")
         else:
-            st.session_state.refined_ideas = refine_idea(st.session_state.idea_input)
+            with st.spinner("아이디어 구체화 중..."):
+                st.session_state.refined_ideas = refine_idea(st.session_state.idea_input)
 
     if st.session_state.refined_ideas:
         st.markdown('<div class="tip">구체화된 기획안을 선택하면 <b>프롬프트 탭</b>에 규칙·진행 방식까지 자동 입력됩니다.</div>', unsafe_allow_html=True)
-        for i, idea in enumerate(st.session_state.refined_ideas, start=1):
-            st.markdown(render_idea_card_html(idea, i), unsafe_allow_html=True)
-            if st.button("✅ 이 기획안 선택", key=f"refined_pick_{i}", use_container_width=True):
-                fill_prompt_from_idea(idea)
+        render_idea_list(st.session_state.refined_ideas, "refined_pick", "✅ 이 기획안 선택")
+
+    st.divider()
+    st.markdown('<p class="section-head"><span>//</span>키워드로 아이디어 뽑기</p>', unsafe_allow_html=True)
+    st.session_state.topic_input = st.text_input(
+        "주제 키워드",
+        value=st.session_state.topic_input,
+        placeholder="예: 축구, 밴드, 게임, 진로, 시험 공부",
+        help="입력한 키워드와 직접 연관된 웹앱 아이디어를 추천해요.",
+    )
+
+    count = st.slider("추천 개수", 3, 10, 5)
+    if st.button("🔥 아이디어 뽑기", type="primary", use_container_width=True):
+        with st.spinner("아이디어 생성 중..."):
+            st.session_state.ideas = generate_ideas(st.session_state.topic_input, count)
+
+    if st.session_state.ideas:
+        st.markdown('<div class="tip">마음에 드는 카드에서 <b>이 아이디어 선택</b> → 프롬프트 탭에 자동 입력</div>', unsafe_allow_html=True)
+        render_idea_list(st.session_state.ideas, "pick", "✅ 이 아이디어 선택")
 
 with tab2:
     st.markdown('<p class="section-head"><span>//</span>프롬프트 생성</p>', unsafe_allow_html=True)
