@@ -18,35 +18,312 @@ except Exception:
 
 
 st.set_page_config(
-    page_title="학생용 AI 웹앱 메이커",
-    page_icon="✨",
+    page_title="AI 웹앱 메이커",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-st.markdown(
-    """
+GLOBAL_STYLES = """
 <style>
-.main-title { font-size: 2.1rem; font-weight: 800; margin-bottom: 0.25rem; }
-.sub-title { color: #6b7280; margin-bottom: 1rem; }
-.card {
-    border: 1px solid #e5e7eb;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
+
+:root {
+    --bg-deep: #06080f;
+    --bg-card: rgba(14, 20, 36, 0.88);
+    --bg-card-hover: rgba(18, 28, 50, 0.95);
+    --border: rgba(56, 189, 248, 0.18);
+    --border-glow: rgba(34, 211, 238, 0.45);
+    --accent: #22d3ee;
+    --accent-2: #818cf8;
+    --accent-3: #34d399;
+    --text: #e8edf5;
+    --text-muted: #8b9cb3;
+    --danger: #f87171;
+}
+
+.stApp {
+    background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(34, 211, 238, 0.14), transparent),
+        radial-gradient(ellipse 50% 40% at 100% 0%, rgba(129, 140, 248, 0.1), transparent),
+        linear-gradient(180deg, #06080f 0%, #0b1020 45%, #080c16 100%);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+}
+
+.block-container { padding-top: 1.5rem; max-width: 1180px; }
+
+#MainMenu, footer, header[data-testid="stHeader"] { visibility: hidden; height: 0; }
+
+/* Hero */
+.hero {
+    position: relative;
+    padding: 2rem 2rem 1.6rem;
+    margin-bottom: 1.2rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background:
+        linear-gradient(135deg, rgba(34, 211, 238, 0.08), rgba(129, 140, 248, 0.06)),
+        var(--bg-card);
+    overflow: hidden;
+}
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), var(--accent-2), transparent);
+}
+.hero-badge {
+    display: inline-block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    background: rgba(34, 211, 238, 0.1);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    padding: 0.28rem 0.75rem;
+    border-radius: 999px;
+    margin-bottom: 0.75rem;
+}
+.hero-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1.65rem, 4vw, 2.35rem);
+    font-weight: 700;
+    margin: 0 0 0.45rem 0;
+    line-height: 1.2;
+    background: linear-gradient(90deg, #f8fafc 0%, #a5f3fc 55%, #c4b5fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.hero-sub {
+    color: var(--text-muted);
+    font-size: 0.98rem;
+    margin: 0;
+    line-height: 1.55;
+}
+
+/* Stats */
+.stat-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.stat-pill {
+    flex: 1;
+    min-width: 140px;
+    padding: 0.85rem 1.1rem;
     border-radius: 14px;
-    padding: 1rem;
-    margin-bottom: 0.8rem;
-    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
 }
+.stat-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: 0.2rem;
+}
+.stat-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+/* Cards */
+.card, .idea-card, .gallery-card {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 0.85rem;
+    background: var(--bg-card);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover, .idea-card:hover, .gallery-card:hover {
+    border-color: var(--border-glow);
+    box-shadow: 0 0 24px rgba(34, 211, 238, 0.08);
+}
+.card h3, .idea-card h3, .gallery-card h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--text);
+    margin-top: 0;
+}
+.card p, .card li, .idea-card p, .idea-card li {
+    color: #b6c4d8;
+}
+
+.idea-card { position: relative; padding-top: 1.4rem; }
+.idea-rank {
+    position: absolute;
+    top: 0.9rem; right: 1rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent-2);
+    opacity: 0.85;
+}
+.idea-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 0.6rem 0;
+}
+.idea-tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent-3);
+    background: rgba(52, 211, 153, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    padding: 0.15rem 0.55rem;
+    border-radius: 6px;
+    margin-right: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
 .tip {
-    border-left: 4px solid #60a5fa;
-    padding: 0.6rem 0.8rem;
-    background: #eff6ff;
-    border-radius: 8px;
-    margin-bottom: 0.7rem;
+    border-left: 3px solid var(--accent);
+    padding: 0.75rem 1rem;
+    background: rgba(34, 211, 238, 0.06);
+    border-radius: 0 12px 12px 0;
+    margin-bottom: 0.85rem;
+    color: #b8c9de;
+    font-size: 0.92rem;
+    line-height: 1.55;
 }
+
+.section-head {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0.2rem 0 0.85rem 0;
+}
+.section-head span {
+    color: var(--accent);
+    margin-right: 0.35rem;
+}
+
+.quick-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 0.45rem;
+    text-transform: uppercase;
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 6px;
+    background: rgba(8, 12, 22, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 6px;
+}
+.stTabs [data-baseweb="tab"] {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    border-radius: 10px;
+    padding: 0.45rem 0.7rem;
+    background: transparent;
+}
+.stTabs [aria-selected="true"] {
+    background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(129, 140, 248, 0.15)) !important;
+    color: var(--text) !important;
+    border: 1px solid rgba(34, 211, 238, 0.25);
+}
+.stTabs [data-baseweb="tab-panel"] {
+    padding-top: 1.1rem;
+}
+
+/* Buttons */
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #0891b2, #6366f1) !important;
+    border: none !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(34, 211, 238, 0.25) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+.stButton > button[kind="primary"]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 28px rgba(34, 211, 238, 0.35) !important;
+}
+.stButton > button[kind="secondary"] {
+    border-radius: 12px !important;
+    border-color: var(--border) !important;
+}
+
+a[data-testid="stLinkButton"] {
+    background: rgba(14, 20, 36, 0.9) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    color: var(--text) !important;
+    font-weight: 600 !important;
+    transition: all 0.15s ease !important;
+}
+a[data-testid="stLinkButton"]:hover {
+    border-color: var(--border-glow) !important;
+    box-shadow: 0 0 16px rgba(34, 211, 238, 0.15) !important;
+    color: var(--accent) !important;
+}
+
+/* Inputs */
+.stTextInput input, .stTextArea textarea, .stSelectbox > div > div {
+    background: rgba(10, 14, 26, 0.9) !important;
+    border-color: var(--border) !important;
+    border-radius: 12px !important;
+    color: var(--text) !important;
+}
+.stTextInput label, .stTextArea label, .stSlider label {
+    color: var(--text-muted) !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+}
+
+/* Code blocks */
+.stCode, pre {
+    border-radius: 12px !important;
+    border: 1px solid var(--border) !important;
+}
+
+/* Metrics override hide if used */
+div[data-testid="stMetric"] {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.75rem 1rem;
+}
+
+/* Markdown in flow */
+.card h2, .card h3, .card h4 { color: var(--text); }
+.card strong { color: #c8d6ea; }
+.card table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+.card th, .card td {
+    border: 1px solid var(--border);
+    padding: 0.55rem 0.75rem;
+    color: #b6c4d8;
+    font-size: 0.88rem;
+}
+.card th { background: rgba(34, 211, 238, 0.08); color: var(--accent); font-weight: 700; }
+
+.gallery-meta { color: var(--text-muted); font-size: 0.88rem; margin: 0.2rem 0; }
+.gallery-author { color: var(--accent-2); font-weight: 600; }
+
+.stCaption { color: var(--text-muted) !important; }
 </style>
-""",
-    unsafe_allow_html=True,
-)
+"""
+
+st.markdown(GLOBAL_STYLES, unsafe_allow_html=True)
 
 LOCAL_BOARD_FILE = Path(__file__).resolve().parent / "shared_links.json"
 
@@ -238,7 +515,7 @@ def fill_prompt_from_idea(idea: Dict[str, Any]) -> None:
     st.session_state.selected_target = idea["target_user"]
     st.session_state.selected_features = ", ".join(idea["core_features"] + idea["fun_ui"])
     st.session_state.selected_design = ", ".join(idea["fun_ui"])
-    st.toast("선택한 아이디어가 프롬프트 도우미에 반영됐어요!", icon="✅")
+    st.toast("아이디어 적용 완료! 프롬프트 탭으로 가보세요", icon="⚡")
 
 
 def build_prompt_pack(
@@ -438,7 +715,7 @@ def process_flow_markdown() -> str:
 1. [share.streamlit.io](https://share.streamlit.io/)에 GitHub 계정으로 로그인한다.
 2. **New app** → 저장소 선택 → **Main file path**에 `app.py` 입력 → **Deploy**
 3. 배포가 끝나면 `https://xxxx.streamlit.app` 형태의 **공유 링크**가 생긴다.
-4. 링크를 친구들에게 보내고, **6번 탭(친구들 링크 접속하기)** 에도 제출한다.
+4. 링크를 친구들에게 보내고, **갤러리 탭**에도 제출한다.
 
 ✅ **완료 기준:** 친구가 링크로 내 웹앱에 접속 가능
 
@@ -593,35 +870,66 @@ def add_shared_row(name: str, title: str, description: str, url: str) -> None:
     _append_local_row(name, title, description, url)
 
 
+def render_idea_card_html(idea: Dict[str, Any], index: int) -> str:
+    features = "".join(f'<span class="idea-tag">{f}</span>' for f in idea["core_features"])
+    ui_tags = "".join(f'<span class="idea-tag">{u}</span>' for u in idea["fun_ui"])
+    return f"""
+<div class="idea-card">
+    <span class="idea-rank">#{index:02d}</span>
+    <h3 class="idea-title">{idea['app_name']}</h3>
+    <p style="margin:0 0 0.5rem 0;color:#8b9cb3;font-size:0.88rem;">🎯 {idea['target_user']}</p>
+    <p style="margin:0 0 0.75rem 0;color:#b6c4d8;font-size:0.92rem;">💡 {idea['problem']}</p>
+    <p style="margin:0 0 0.35rem 0;font-size:0.78rem;font-weight:700;color:#22d3ee;letter-spacing:0.06em;">CORE FEATURES</p>
+    <div style="margin-bottom:0.75rem;">{features}</div>
+    <p style="margin:0 0 0.35rem 0;font-size:0.78rem;font-weight:700;color:#818cf8;letter-spacing:0.06em;">UI VIBE</p>
+    <div>{ui_tags}</div>
+</div>
+""".strip()
+
+
 init_state()
 
-st.markdown('<div class="main-title">✨ 학생용 AI 웹앱 메이커</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">핵심 기능 전체 + 공유 탭은 설정 없이 바로 동작해요.</div>', unsafe_allow_html=True)
+st.markdown(
+    """
+<div class="hero">
+    <div class="hero-badge">WEB DEV × AI</div>
+    <h1 class="hero-title">내 웹앱, 직접 만들고 배포한다</h1>
+    <p class="hero-sub">아이디어 뽑기 → 프롬프트 생성 → Gemini로 코딩 → GitHub 업로드 → Streamlit 배포. 7단계로 끝.</p>
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
+st.markdown('<p class="quick-label">Quick Launch</p>', unsafe_allow_html=True)
 link1, link2, link3 = st.columns(3)
 with link1:
-    st.link_button("✨ Gemini 열기", GEMINI_URL, use_container_width=True, help="프롬프트를 붙여넣어 코드를 생성해요")
+    st.link_button("⚡ Gemini", GEMINI_URL, use_container_width=True, help="프롬프트 붙여넣고 코드 생성")
 with link2:
-    st.link_button("🐙 GitHub 열기", GITHUB_URL, use_container_width=True, help="저장소를 만들고 파일을 업로드해요")
+    st.link_button("⌨ GitHub", GITHUB_URL, use_container_width=True, help="저장소 만들고 파일 업로드")
 with link3:
-    st.link_button("🚀 Streamlit 배포 열기", STREAMLIT_URL, use_container_width=True, help="웹앱을 배포하고 공유 링크를 받아요")
+    st.link_button("🚀 Streamlit", STREAMLIT_URL, use_container_width=True, help="배포하고 공유 링크 받기")
 
-k1, k2 = st.columns(2)
-with k1:
-    st.metric("핵심 기능", "모두 포함")
-with k2:
-    st.metric("공유 탭", "즉시 사용 가능")
+st.markdown(
+    """
+<div class="stat-row">
+    <div class="stat-pill"><span class="stat-label">WORKFLOW</span><span class="stat-value">7단계 완성</span></div>
+    <div class="stat-pill"><span class="stat-label">PROMPT</span><span class="stat-value">3종 자동 생성</span></div>
+    <div class="stat-pill"><span class="stat-label">GALLERY</span><span class="stat-value">친구 작품 공유</span></div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
 
 tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
     [
-        "0. 제작 과정 설명",
-        "1. 웹앱 아이디어 추천",
-        "2. 프롬프트 생성 도우미",
-        "3. HTML/app.py 생성법",
-        "4. GitHub 업로드 방법",
-        "5. Streamlit 배포 방법",
-        "6. 친구들 링크 접속하기",
+        "📋 로드맵",
+        "💡 아이디어",
+        "📝 프롬프트",
+        "⚙️ 코드 생성",
+        "⌨ GitHub",
+        "🚀 배포",
+        "🎮 갤러리",
     ]
 )
 
@@ -629,7 +937,7 @@ with tab0:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown(process_flow_markdown())
     st.markdown("---")
-    st.markdown("**바로가기**")
+    st.markdown('<p class="quick-label">Quick Launch</p>', unsafe_allow_html=True)
     t0c1, t0c2, t0c3 = st.columns(3)
     with t0c1:
         st.link_button("Gemini (3·5단계)", GEMINI_URL, use_container_width=True)
@@ -640,7 +948,7 @@ with tab0:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab1:
-    st.subheader("웹앱 아이디어 추천")
+    st.markdown('<p class="section-head"><span>//</span>아이디어 추천</p>', unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
         st.session_state.topic_input = st.text_input("주제/키워드", value=st.session_state.topic_input)
@@ -648,7 +956,7 @@ with tab1:
         st.session_state.interest_input = st.text_input("관심사", value=st.session_state.interest_input)
 
     count = st.slider("추천 개수", 3, 10, 5)
-    if st.button("아이디어 생성", type="primary", use_container_width=True):
+    if st.button("🔥 아이디어 뽑기", type="primary", use_container_width=True):
         st.session_state.ideas = generate_ideas(
             st.session_state.topic_input,
             st.session_state.interest_input,
@@ -656,25 +964,15 @@ with tab1:
         )
 
     if st.session_state.ideas:
-        st.markdown('<div class="tip">마음에 드는 아이디어에서 <b>이 아이디어 선택</b>을 누르면 2번 탭에 자동 입력됩니다.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="tip">마음에 드는 카드에서 <b>이 아이디어 선택</b> → 프롬프트 탭에 자동 입력</div>', unsafe_allow_html=True)
         for i, idea in enumerate(st.session_state.ideas, start=1):
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            st.markdown(f"### {i}. {idea['app_name']}")
-            st.markdown(f"- 타겟: {idea['target_user']}")
-            st.markdown(f"- 문제: {idea['problem']}")
-            st.markdown("- 핵심 기능")
-            for f in idea["core_features"]:
-                st.markdown(f"  - {f}")
-            st.markdown("- 재미 UI")
-            for u in idea["fun_ui"]:
-                st.markdown(f"  - {u}")
-            if st.button("이 아이디어 선택", key=f"pick_{i}", use_container_width=True):
+            st.markdown(render_idea_card_html(idea, i), unsafe_allow_html=True)
+            if st.button("✅ 이 아이디어 선택", key=f"pick_{i}", use_container_width=True):
                 fill_prompt_from_idea(idea)
-            st.markdown("</div>", unsafe_allow_html=True)
 
 with tab2:
-    st.subheader("프롬프트 생성 도우미")
-    st.link_button("✨ Gemini에서 코드 생성하기", GEMINI_URL, help="프롬프트를 복사한 뒤 Gemini에 붙여넣으세요")
+    st.markdown('<p class="section-head"><span>//</span>프롬프트 생성</p>', unsafe_allow_html=True)
+    st.link_button("⚡ Gemini 열기", GEMINI_URL, help="프롬프트 복사 후 붙여넣기")
     app_idea = st.text_area("아이디어 설명", value=st.session_state.selected_idea, height=90)
     target_user = st.text_input("타겟 사용자", value=st.session_state.selected_target)
     required_features = st.text_area("필수 기능", value=st.session_state.selected_features, height=90)
@@ -686,7 +984,7 @@ with tab2:
         help="색감, 분위기, 레이아웃 스타일을 적으면 HTML·app.py 프롬프트에 함께 반영됩니다.",
     )
 
-    if st.button("프롬프트 3종 만들기", type="primary", use_container_width=True):
+    if st.button("🛠 프롬프트 3종 생성", type="primary", use_container_width=True):
         if not app_idea.strip() or not required_features.strip():
             st.error("아이디어 설명과 필수 기능을 입력해 주세요.")
         else:
@@ -786,15 +1084,15 @@ with tab5:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab6:
-    st.subheader("친구들 링크 접속하기")
-    st.markdown('<div class="tip">기본 모드(설정 없음): 앱 내부 파일에 자동 저장되어 즉시 동작합니다. Google Sheets가 설정되어 있으면 자동으로 시트에 저장됩니다.</div>', unsafe_allow_html=True)
+    st.markdown('<p class="section-head"><span>//</span>친구들 작품 갤러리</p>', unsafe_allow_html=True)
+    st.markdown('<div class="tip">배포 완료한 Streamlit 링크를 올리면 전체가 볼 수 있어요. 먼저 올린 사람이 주인공 🏆</div>', unsafe_allow_html=True)
 
     with st.form("share_form", clear_on_submit=True):
         name = st.text_input("이름")
         title = st.text_input("웹앱 제목")
         description = st.text_input("한 줄 설명")
         url = st.text_input("스트림릿 링크", placeholder="https://...streamlit.app")
-        submit = st.form_submit_button("제출")
+        submit = st.form_submit_button("📤 갤러리에 등록", use_container_width=True)
 
     if submit:
         if not name.strip() or not title.strip() or not description.strip() or not url.strip():
@@ -812,18 +1110,21 @@ with tab6:
     st.caption(f"총 {len(rows)}개 작품")
 
     if not rows:
-        st.info("아직 제출된 작품이 없어요.")
+        st.info("아직 등록된 작품이 없어요. 첫 번째 주인공이 되어 보세요!")
     else:
         for idx, row in enumerate(rows, start=1):
-            st.markdown('<div class="card">', unsafe_allow_html=True)
-            c_left, c_right = st.columns([4, 1])
-            with c_left:
-                st.markdown(f"### {idx}. {row['title']}")
-                st.markdown(f"- 제출자: **{row['name']}**")
-                st.markdown(f"- 설명: {row['description']}")
-                st.caption(f"제출 시각: {row['submitted_at']}")
-            with c_right:
-                st.link_button("바로 접속", row["url"], use_container_width=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+<div class="gallery-card">
+    <span class="idea-rank">#{idx:02d}</span>
+    <h3 style="font-family:'Space Grotesk',sans-serif;margin:0 0 0.5rem 0;">{row['title']}</h3>
+    <p class="gallery-meta">by <span class="gallery-author">{row['name']}</span></p>
+    <p class="gallery-meta">{row['description']}</p>
+    <p style="font-size:0.75rem;color:#6b7f96;margin:0.4rem 0 0 0;">{row['submitted_at']}</p>
+</div>
+""",
+                unsafe_allow_html=True,
+            )
+            st.link_button("▶ 플레이", row["url"], key=f"play_{idx}", use_container_width=True)
 
 st.caption(f"업데이트 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
