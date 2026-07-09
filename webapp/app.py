@@ -58,6 +58,7 @@ def init_state() -> None:
         "selected_idea": "",
         "selected_target": "학생",
         "selected_features": "",
+        "selected_design": "",
         "prompt_pack": {},
         "topic_input": "학교 생활",
         "interest_input": "게임, 음악, 친구, 진로",
@@ -239,10 +240,19 @@ def fill_prompt_from_idea(idea: Dict[str, Any]) -> None:
     st.session_state.selected_idea = idea["app_name"] + "\n문제: " + idea["problem"]
     st.session_state.selected_target = idea["target_user"]
     st.session_state.selected_features = ", ".join(idea["core_features"] + idea["fun_ui"])
+    st.session_state.selected_design = ", ".join(idea["fun_ui"])
     st.toast("선택한 아이디어가 프롬프트 도우미에 반영됐어요!", icon="✅")
 
 
-def build_prompt_pack(app_idea: str, target_user: str, required_features: str, level: str) -> Dict[str, str]:
+def build_prompt_pack(
+    app_idea: str,
+    target_user: str,
+    required_features: str,
+    design_style: str,
+    level: str,
+) -> Dict[str, str]:
+    design_section = design_style.strip() or "밝고 친근한 학생용 UI, 카드형 레이아웃, 모바일 반응형"
+
     html_prompt = f"""
 # 역할
 너는 학생 프로젝트를 완성도 높게 구현하는 시니어 프론트엔드 개발자다.
@@ -255,20 +265,22 @@ def build_prompt_pack(app_idea: str, target_user: str, required_features: str, l
 - 타겟 사용자: {target_user}
 - 난이도: {level}
 - 필수 기능: {required_features}
+- 원하는 디자인/분위기: {design_section}
 
 # 반드시 지킬 구현 요구사항
 1) HTML/CSS/JavaScript를 한 파일에 모두 포함한다.
 2) 한국어 UI 텍스트를 사용한다.
 3) 모바일 반응형을 지원한다.
-4) 아래 UI 요소를 반드시 포함한다:
+4) 위 "원하는 디자인/분위기"를 색상, 폰트, 레이아웃, 버튼 스타일에 반영한다.
+5) 아래 UI 요소를 반드시 포함한다:
    - 상단 타이틀 섹션
    - 입력 폼
    - 실행 버튼
    - 결과 카드 영역
    - 상태 배지 또는 진행도 표시
-5) 빈 입력/오류 상황에서 사용자에게 친절한 경고 메시지를 보여준다.
-6) 주석을 통해 초보 학생도 구조를 이해할 수 있게 작성한다.
-7) 코드 외 설명은 출력하지 말고, 오직 완성된 코드만 출력한다.
+6) 빈 입력/오류 상황에서 사용자에게 친절한 경고 메시지를 보여준다.
+7) 주석을 통해 초보 학생도 구조를 이해할 수 있게 작성한다.
+8) 코드 외 설명은 출력하지 말고, 오직 완성된 코드만 출력한다.
 
 # 출력 형식
 - ```html 코드블록 하나로만 출력
@@ -276,25 +288,34 @@ def build_prompt_pack(app_idea: str, target_user: str, required_features: str, l
 
     streamlit_prompt = f"""
 # 역할
-너는 Streamlit + Gemini API 앱 제작 멘토다.
+너는 Streamlit 배포 전문가다.
 
 # 목표
-아래 아이디어를 복사 즉시 실행 가능한 단일 `app.py` 파일로 완성하라.
+`htmls/index.html` 파일을 Streamlit 앱에서 열어 보여주는 배포용 `app.py`와 `requirements.txt`를 생성하라.
 
 # 프로젝트 정보
 - 아이디어: {app_idea}
 - 타겟 사용자: {target_user}
 - 난이도: {level}
 - 필수 기능: {required_features}
+- 원하는 디자인/분위기: {design_section}
+
+# 저장소 폴더 구조 (반드시 이 구조를 전제로 작성)
+```
+내-웹앱/
+├── app.py
+├── requirements.txt
+└── htmls/
+    └── index.html
+```
 
 # 필수 구현 조건
-1) `st.secrets["GEMINI_API_KEY"]`를 우선 사용하고, 없으면 사이드바 입력으로 대체.
-2) 사이드바, 탭, 컬럼, 버튼, 진행도/메트릭 UI를 포함.
-3) 입력 검증과 예외 처리를 포함.
-4) 세션 상태(`st.session_state`)를 사용해 결과를 유지.
-5) 학생이 보기 쉽게 한국어 주석을 적절히 추가.
-6) 실행 가능한 완성 코드만 출력(중간 생략 금지).
-7) 코드 뒤에 `requirements.txt` 내용도 함께 출력.
+1) `app.py`는 `htmls/index.html` 파일을 읽어 `st.components.v1.html()` 또는 동등한 방식으로 전체 화면에 렌더링한다.
+2) `index.html` 경로는 `Path(__file__).resolve().parent / "htmls" / "index.html"`처럼 상대 경로로 찾는다.
+3) 파일이 없을 때는 한국어로 친절한 안내 메시지를 보여준다.
+4) 페이지 제목과 간단한 소개 문구를 한국어로 표시한다.
+5) `requirements.txt`에는 `streamlit`만 포함한다.
+6) 코드 생략 없이 전체 파일을 출력한다.
 
 # 출력 형식
 - 먼저 ```python 코드블록(app.py 전체)
@@ -303,25 +324,27 @@ def build_prompt_pack(app_idea: str, target_user: str, required_features: str, l
 
     convert_prompt = f"""
 # 역할
-너는 HTML 웹앱을 Streamlit으로 구조 변환하는 전문가다.
+너는 HTML 웹앱을 Streamlit 배포용 래퍼로 변환하는 전문가다.
 
 # 목표
-내가 가진 HTML 기반 아이디어를 기능적으로 동일한 Streamlit `app.py`로 변환하라.
+이미 만든 `htmls/index.html`을 Streamlit Community Cloud에서 열 수 있는 `app.py`로 변환하라.
 
 # 변환 대상 정보
 - 아이디어: {app_idea}
 - 타겟 사용자: {target_user}
 - 필수 기능: {required_features}
+- 원하는 디자인/분위기: {design_section}
 
 # 변환 규칙
-1) UI 의미를 유지하되 Streamlit 컴포넌트로 재구성.
-2) 함수 단위로 분리해서 가독성 확보.
-3) 세션 상태로 사용자 입력/결과 유지.
-4) 오류 메시지는 한국어로 친절하게 제공.
-5) 코드 생략 없이 전체 `app.py`를 출력.
+1) HTML 내용은 그대로 두고, `app.py`가 `htmls/index.html`을 읽어 보여주게 한다.
+2) `st.components.v1.html(..., height=..., scrolling=True)`로 넓은 화면에 표시한다.
+3) 파일 경로는 `Path(__file__).resolve().parent / "htmls" / "index.html"`을 사용한다.
+4) 오류 메시지는 한국어로 친절하게 제공한다.
+5) 코드 생략 없이 전체 `app.py`와 `requirements.txt`를 출력한다.
 
 # 출력 형식
-- ```python 코드블록 하나만 출력
+- 먼저 ```python 코드블록(app.py 전체)
+- 다음 ```txt 코드블록(requirements.txt)
 """.strip()
 
     return {
@@ -332,19 +355,113 @@ def build_prompt_pack(app_idea: str, target_user: str, required_features: str, l
 
 
 def process_flow_markdown() -> str:
-    return "\n".join(
-        [
-            "## 학생용 웹앱 제작 순서",
-            "",
-            "1. 아이디어 추천 탭에서 주제 기반 아이디어를 뽑는다.",
-            "2. 마음에 드는 아이디어를 선택해 프롬프트 도우미로 자동 입력한다.",
-            "3. HTML 프롬프트 또는 Streamlit 프롬프트를 복사해 Gemini에 붙여넣는다.",
-            "4. 생성된 코드를 로컬에서 실행해 UI와 기능을 확인한다.",
-            "5. GitHub에 업로드한다.",
-            "6. Streamlit Community Cloud로 배포한다.",
-            "7. 공유 탭에서 링크를 제출하고 친구들 작품을 둘러본다.",
-        ]
-    )
+    return """
+## 학생용 웹앱 제작·배포 로드맵
+
+> **핵심 흐름:** 아이디어 → 프롬프트 → HTML 제작 → GitHub 업로드 → app.py 생성 → 전체 업로드 → Streamlit 배포·공유
+
+---
+
+### 1단계: 기획 — 아이디어 구상
+- **누구를 위한 앱인가?** (예: 시험 준비하는 친구, 동아리 부원)
+- **어떤 문제를 풀까?** (예: 공부 계획이 자꾸 밀림)
+- **핵심 기능 3가지**를 적는다.
+- **원하는 디자인**도 함께 정한다. (예: 파란색·미니멀, 게임 느낌, 카드형 레이아웃)
+
+✅ **완료 기준:** 아이디어 + 기능 + 디자인 메모가 준비됨
+
+---
+
+### 2단계: 프롬프트 만들기
+- **1번 탭**에서 아이디어를 추천받거나, 직접 적은 내용을 **2번 탭**에 입력한다.
+- **기능**뿐 아니라 **디자인/분위기**도 프롬프트에 포함한다.
+- 아래 **2종 프롬프트**를 준비한다.
+  - **A. HTML 생성 프롬프트** → `index.html` 만들 때 사용
+  - **B. Streamlit 배포 프롬프트** → `app.py` 만들 때 사용
+
+✅ **완료 기준:** A·B 프롬프트를 복사해 둠
+
+---
+
+### 3단계: HTML 웹앱 만들기
+1. Gemini에 **A 프롬프트**를 붙여넣는다.
+2. 생성된 `index.html` 코드를 복사한다.
+3. 컴퓨터에 `index.html`로 저장한 뒤, 브라우저로 열어 **UI·기능**을 확인한다.
+4. 마음에 들 때까지 Gemini에게 수정을 요청한다. (에러 문구를 그대로 붙여넣기)
+
+✅ **완료 기준:** 브라우저에서 잘 동작하는 `index.html` 확보
+
+---
+
+### 4단계: GitHub 저장소 준비
+1. [GitHub](https://github.com)에서 **새 저장소(Repository)** 를 만든다.
+2. 아래 **폴더 구조**를 미리 계획한다.
+
+```
+내-웹앱/
+├── app.py              ← 5단계에서 추가
+├── requirements.txt    ← 5단계에서 추가
+└── htmls/
+    └── index.html      ← 3단계 결과
+```
+
+3. `htmls` 폴더를 만들고, 그 안에 `index.html`을 넣는다.
+4. GitHub에 **첫 업로드**를 한다. (웹에서 직접 업로드하거나 Git 명령어 사용)
+
+✅ **완료 기준:** GitHub에 `htmls/index.html`이 올라가 있음
+
+---
+
+### 5단계: Streamlit 배포용 app.py 만들기
+1. Gemini에 **B 프롬프트**를 붙여넣는다.
+2. 생성된 `app.py`와 `requirements.txt`를 복사한다.
+3. `app.py`는 **`htmls/index.html` 파일을 열어 보여주는 역할**을 한다.
+4. 로컬에서 `streamlit run app.py`로 미리 확인한다. (선택)
+
+✅ **완료 기준:** `app.py` + `requirements.txt` 준비 완료
+
+---
+
+### 6단계: GitHub에 전체 파일 업로드
+1. 저장소 루트에 `app.py`, `requirements.txt`를 추가한다.
+2. 최종 구조가 아래와 같은지 확인한다.
+
+```
+내-웹앱/
+├── app.py
+├── requirements.txt
+└── htmls/
+    └── index.html
+```
+
+3. 변경 사항을 GitHub에 **다시 업로드(커밋·푸시)** 한다.
+
+✅ **완료 기준:** GitHub에 3개 파일(또는 폴더 포함 전체 구조)이 모두 있음
+
+---
+
+### 7단계: Streamlit으로 배포하고 공유
+1. [share.streamlit.io](https://share.streamlit.io/)에 GitHub 계정으로 로그인한다.
+2. **New app** → 저장소 선택 → **Main file path**에 `app.py` 입력 → **Deploy**
+3. 배포가 끝나면 `https://xxxx.streamlit.app` 형태의 **공유 링크**가 생긴다.
+4. 링크를 친구들에게 보내고, **6번 탭(친구들 링크 접속하기)** 에도 제출한다.
+
+✅ **완료 기준:** 친구가 링크로 내 웹앱에 접속 가능
+
+---
+
+### 한눈에 보는 순서 요약
+
+| 순서 | 할 일 | 결과물 |
+|------|--------|--------|
+| 1 | 아이디어·디자인 구상 | 기획 메모 |
+| 2 | 프롬프트 2종 생성 | A(HTML), B(app.py) |
+| 3 | Gemini로 HTML 생성 | `index.html` |
+| 4 | GitHub 저장소 + htmls 업로드 | `htmls/index.html` |
+| 5 | Gemini로 app.py 생성 | `app.py`, `requirements.txt` |
+| 6 | GitHub에 전체 업로드 | 완성된 저장소 |
+| 7 | Streamlit 배포·공유 | 공유 URL |
+""".strip()
 
 
 def is_valid_http_url(url: str) -> bool:
@@ -570,15 +687,24 @@ with tab2:
     app_idea = st.text_area("아이디어 설명", value=st.session_state.selected_idea, height=90)
     target_user = st.text_input("타겟 사용자", value=st.session_state.selected_target)
     required_features = st.text_area("필수 기능", value=st.session_state.selected_features, height=90)
+    design_style = st.text_area(
+        "원하는 디자인/분위기",
+        value=st.session_state.selected_design,
+        height=70,
+        placeholder="예: 파란색·미니멀, 게임 느낌, 둥근 버튼, 카드형 레이아웃, 모바일 친화적",
+        help="색감, 분위기, 레이아웃 스타일을 적으면 HTML·app.py 프롬프트에 함께 반영됩니다.",
+    )
 
     if st.button("프롬프트 3종 만들기", type="primary", use_container_width=True):
         if not app_idea.strip() or not required_features.strip():
             st.error("아이디어 설명과 필수 기능을 입력해 주세요.")
         else:
+            st.session_state.selected_design = design_style
             st.session_state.prompt_pack = build_prompt_pack(
                 app_idea.strip(),
                 target_user.strip() or "학생",
                 required_features.strip(),
+                design_style.strip(),
                 st.session_state.level,
             )
 
@@ -586,34 +712,61 @@ with tab2:
         pack = st.session_state.prompt_pack
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### A. HTML 코드 생성 프롬프트")
+        st.markdown("### A. HTML 코드 생성 프롬프트 (3단계에서 사용)")
         st.code(pack["html_prompt"], language="text")
         st.download_button("HTML 프롬프트 다운로드", data=pack["html_prompt"], file_name="prompt_html.txt", mime="text/plain")
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### B. Streamlit app.py 생성 프롬프트")
+        st.markdown("### B. Streamlit 배포용 app.py 생성 프롬프트 (5단계에서 사용)")
         st.code(pack["streamlit_prompt"], language="text")
         st.download_button("app.py 프롬프트 다운로드", data=pack["streamlit_prompt"], file_name="prompt_app_py.txt", mime="text/plain")
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### C. HTML → app.py 변환 프롬프트")
+        st.markdown("### C. HTML → app.py 변환 프롬프트 (이미 만든 HTML이 있을 때)")
         st.code(pack["convert_prompt"], language="text")
         st.download_button("변환 프롬프트 다운로드", data=pack["convert_prompt"], file_name="prompt_convert.txt", mime="text/plain")
         st.markdown("</div>", unsafe_allow_html=True)
 
 with tab3:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("- 먼저 HTML 버전을 만들고, 그다음 app.py 변환을 추천해요.")
-    st.markdown("- 출력 형식을 꼭 지정하면 코드 품질이 올라가요.")
-    st.markdown("- 에러가 나면 에러 문구 그대로 Gemini에 붙여넣어 수정 요청하세요.")
+    st.markdown("### 3단계: HTML 만들기")
+    st.markdown("1. **2번 탭**에서 **A 프롬프트**를 복사해 Gemini에 붙여넣는다.")
+    st.markdown("2. 생성된 `index.html` 코드를 복사해 파일로 저장한다.")
+    st.markdown("3. 브라우저에서 열어 버튼·입력·결과 화면이 잘 되는지 확인한다.")
+    st.markdown("4. 수정이 필요하면 에러 문구나 원하는 변경 사항을 Gemini에 그대로 전달한다.")
+    st.markdown("")
+    st.markdown("### 5단계: app.py 만들기")
+    st.markdown("1. **2번 탭**에서 **B 프롬프트**를 복사해 Gemini에 붙여넣는다.")
+    st.markdown("2. `app.py`는 `htmls/index.html`을 읽어 보여주는 **배포용 껍데기** 역할이다.")
+    st.markdown("3. `requirements.txt`도 함께 생성되므로 같이 저장한다.")
+    st.markdown("")
+    st.markdown('<div class="tip">팁: HTML을 먼저 완성한 뒤 app.py를 만드는 순서가 가장 쉽습니다. 출력 형식(```html, ```python)을 프롬프트에 명시하면 코드 품질이 올라갑니다.</div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab4:
     st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("### 4·6단계: GitHub 업로드")
+    st.markdown("**최종 폴더 구조**를 먼저 맞춘 뒤 업로드하세요.")
+    st.code(
+        """내-웹앱/
+├── app.py
+├── requirements.txt
+└── htmls/
+    └── index.html""",
+        language="text",
+    )
+    st.markdown("#### 방법 1) GitHub 웹사이트에서 직접 업로드")
+    st.markdown("1. GitHub → New repository → 저장소 이름 입력 → Create")
+    st.markdown("2. **Add file → Upload files** 로 `htmls/index.html` 업로드 (4단계)")
+    st.markdown("3. `app.py`, `requirements.txt` 추가 업로드 (6단계)")
+    st.markdown("")
+    st.markdown("#### 방법 2) Git 명령어로 업로드")
     st.code(
         """git init
+mkdir -p htmls
+# htmls/index.html, app.py, requirements.txt 준비 후
 git add .
 git commit -m "feat: my webapp"
 git branch -M main
@@ -625,11 +778,14 @@ git push -u origin main""",
 
 with tab5:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("1) [share.streamlit.io](https://share.streamlit.io/) 로그인")
-    st.markdown("2) New app 클릭")
-    st.markdown("3) Repository 선택")
-    st.markdown("4) Main file path 설정")
-    st.markdown("5) Deploy 클릭")
+    st.markdown("### 7단계: Streamlit Community Cloud 배포")
+    st.markdown("1. [share.streamlit.io](https://share.streamlit.io/) 에 GitHub 계정으로 로그인")
+    st.markdown("2. **New app** 클릭")
+    st.markdown("3. **Repository** 에 내 저장소 선택")
+    st.markdown("4. **Main file path** 에 `app.py` 입력")
+    st.markdown("5. **Deploy** 클릭 → 몇 분 후 `https://xxxx.streamlit.app` 링크 생성")
+    st.markdown("")
+    st.markdown('<div class="tip">배포가 실패하면 GitHub에 app.py 경로와 htmls/index.html 위치가 맞는지, requirements.txt에 streamlit이 있는지 확인하세요.</div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab6:
