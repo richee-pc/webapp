@@ -21,7 +21,7 @@ st.set_page_config(
     page_title="학생용 AI 웹앱 메이커",
     page_icon="✨",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown(
@@ -53,7 +53,6 @@ LOCAL_BOARD_FILE = Path(__file__).resolve().parent / "shared_links.json"
 
 def init_state() -> None:
     defaults = {
-        "api_key_sidebar": "",
         "ideas": [],
         "selected_idea": "",
         "selected_target": "학생",
@@ -80,11 +79,7 @@ def get_secret_api_key() -> Optional[str]:
 
 
 def get_active_api_key() -> Optional[str]:
-    secret_key = get_secret_api_key()
-    if secret_key:
-        return secret_key
-    typed = st.session_state.api_key_sidebar.strip()
-    return typed if typed else None
+    return get_secret_api_key()
 
 
 def normalize_json(raw: str) -> str:
@@ -604,31 +599,15 @@ init_state()
 st.markdown('<div class="main-title">✨ 학생용 AI 웹앱 메이커</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">핵심 기능 전체 + 공유 탭은 설정 없이 바로 동작해요.</div>', unsafe_allow_html=True)
 
-with st.sidebar:
-    st.header("Gemini API 설정")
-    secret_key = get_secret_api_key()
-    if secret_key:
-        st.success("secrets에서 API 키를 찾았어요.")
-    else:
-        st.session_state.api_key_sidebar = st.text_input(
-            "Gemini API 키(선택)",
-            type="password",
-            value=st.session_state.api_key_sidebar,
-            placeholder="AIza...",
-            help="키가 없어도 기본 아이디어/프롬프트 기능은 동작해요.",
-        )
-
-    st.markdown("---")
-    st.session_state.level = st.selectbox("난이도", ["입문", "기초", "중급"], index=0)
-
-
 k1, k2, k3 = st.columns(3)
 with k1:
     st.metric("핵심 기능", "모두 포함")
 with k2:
     st.metric("공유 탭", "즉시 사용 가능")
 with k3:
-    st.metric("현재 난이도", st.session_state.level)
+    level_options = ["입문", "기초", "중급"]
+    level_index = level_options.index(st.session_state.level) if st.session_state.level in level_options else 0
+    st.session_state.level = st.selectbox("난이도", level_options, index=level_index)
 
 
 tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
