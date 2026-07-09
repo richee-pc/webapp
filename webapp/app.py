@@ -18,7 +18,7 @@ except Exception:
 
 
 st.set_page_config(
-    page_title="AI 웹앱 메이커",
+    page_title="LINKFORGE — AI 웹앱 메이커",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -26,7 +26,8 @@ st.set_page_config(
 
 GLOBAL_STYLES = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Orbitron:wght@700;800;900&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
 :root {
     --bg-deep: #06080f;
@@ -39,7 +40,10 @@ GLOBAL_STYLES = """
     --accent-3: #34d399;
     --text: #e8edf5;
     --text-muted: #8b9cb3;
-    --danger: #f87171;
+    --font-display: 'Orbitron', sans-serif;
+    --font-ui: 'Chakra Petch', sans-serif;
+    --font-body: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
 }
 
 .stApp {
@@ -48,7 +52,7 @@ GLOBAL_STYLES = """
         radial-gradient(ellipse 50% 40% at 100% 0%, rgba(129, 140, 248, 0.1), transparent),
         linear-gradient(180deg, #06080f 0%, #0b1020 45%, #080c16 100%);
     color: var(--text);
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-body);
 }
 
 .block-container { padding-top: 1.5rem; max-width: 1180px; }
@@ -58,7 +62,7 @@ GLOBAL_STYLES = """
 /* Hero */
 .hero {
     position: relative;
-    padding: 2rem 2rem 1.6rem;
+    padding: 2.1rem 2rem 1.75rem;
     margin-bottom: 1.2rem;
     border-radius: 20px;
     border: 1px solid var(--border);
@@ -74,35 +78,73 @@ GLOBAL_STYLES = """
     height: 2px;
     background: linear-gradient(90deg, transparent, var(--accent), var(--accent-2), transparent);
 }
+.hero::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; right: -20px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.07), transparent 70%);
+    pointer-events: none;
+}
+.hero-logo {
+    font-family: var(--font-display);
+    font-size: clamp(1.55rem, 3.5vw, 2.1rem);
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    margin: 0 0 0.55rem 0;
+    line-height: 1;
+    background: linear-gradient(100deg, #67e8f9 0%, #22d3ee 40%, #a5b4fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 40px rgba(34, 211, 238, 0.15);
+}
 .hero-badge {
     display: inline-block;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    color: var(--accent);
-    background: rgba(34, 211, 238, 0.1);
-    border: 1px solid rgba(34, 211, 238, 0.3);
-    padding: 0.28rem 0.75rem;
-    border-radius: 999px;
-    margin-bottom: 0.75rem;
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    color: var(--accent-2);
+    background: rgba(129, 140, 248, 0.08);
+    border: 1px solid rgba(129, 140, 248, 0.28);
+    padding: 0.28rem 0.8rem;
+    border-radius: 6px;
+    margin-bottom: 0.85rem;
 }
 .hero-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: clamp(1.65rem, 4vw, 2.35rem);
-    font-weight: 700;
-    margin: 0 0 0.45rem 0;
-    line-height: 1.2;
-    background: linear-gradient(90deg, #f8fafc 0%, #a5f3fc 55%, #c4b5fd 100%);
+    font-family: var(--font-body);
+    font-size: clamp(1.45rem, 3.8vw, 2rem);
+    font-weight: 800;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.35;
+    color: #f1f5f9;
+    letter-spacing: -0.02em;
+}
+.hero-accent {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    background: linear-gradient(90deg, #22d3ee, #818cf8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 .hero-sub {
+    font-family: var(--font-body);
     color: var(--text-muted);
-    font-size: 0.98rem;
+    font-size: 0.95rem;
+    font-weight: 400;
     margin: 0;
-    line-height: 1.55;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+}
+.hero-sub em {
+    font-style: normal;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: #6ee7b7;
+    font-weight: 600;
 }
 
 /* Stats */
@@ -122,17 +164,19 @@ GLOBAL_STYLES = """
 }
 .stat-label {
     display: block;
+    font-family: var(--font-ui);
     font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
+    font-weight: 600;
+    letter-spacing: 0.14em;
     color: var(--accent);
     margin-bottom: 0.2rem;
 }
 .stat-value {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.15rem;
+    font-family: var(--font-body);
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--text);
+    letter-spacing: -0.02em;
 }
 
 /* Cards */
@@ -149,7 +193,8 @@ GLOBAL_STYLES = """
     box-shadow: 0 0 24px rgba(34, 211, 238, 0.08);
 }
 .card h3, .idea-card h3, .gallery-card h3 {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-body);
+    font-weight: 700;
     color: var(--text);
     margin-top: 0;
 }
@@ -161,21 +206,23 @@ GLOBAL_STYLES = """
 .idea-rank {
     position: absolute;
     top: 0.9rem; right: 1rem;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-mono);
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--accent-2);
     opacity: 0.85;
 }
 .idea-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.15rem;
+    font-family: var(--font-body);
+    font-size: 1.12rem;
     font-weight: 700;
     color: var(--text);
     margin: 0 0 0.6rem 0;
+    letter-spacing: -0.02em;
 }
 .idea-tag {
     display: inline-block;
+    font-family: var(--font-ui);
     font-size: 0.72rem;
     font-weight: 600;
     color: var(--accent-3);
@@ -199,24 +246,28 @@ GLOBAL_STYLES = """
 }
 
 .section-head {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.35rem;
-    font-weight: 700;
+    font-family: var(--font-body);
+    font-size: 1.3rem;
+    font-weight: 800;
     color: var(--text);
     margin: 0.2rem 0 0.85rem 0;
+    letter-spacing: -0.02em;
 }
 .section-head span {
+    font-family: var(--font-mono);
+    font-weight: 600;
     color: var(--accent);
-    margin-right: 0.35rem;
+    margin-right: 0.45rem;
+    font-size: 1rem;
 }
 
 .quick-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
     color: var(--text-muted);
     margin-bottom: 0.45rem;
-    text-transform: uppercase;
 }
 
 /* Tabs */
@@ -228,9 +279,10 @@ GLOBAL_STYLES = """
     padding: 6px;
 }
 .stTabs [data-baseweb="tab"] {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-ui);
     font-weight: 600;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
+    letter-spacing: 0.04em;
     color: var(--text-muted);
     border-radius: 10px;
     padding: 0.45rem 0.7rem;
@@ -249,7 +301,9 @@ GLOBAL_STYLES = """
 .stButton > button[kind="primary"] {
     background: linear-gradient(135deg, #0891b2, #6366f1) !important;
     border: none !important;
+    font-family: var(--font-ui) !important;
     font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
     border-radius: 12px !important;
     box-shadow: 0 4px 20px rgba(34, 211, 238, 0.25) !important;
     transition: transform 0.15s ease, box-shadow 0.15s ease !important;
@@ -268,7 +322,9 @@ a[data-testid="stLinkButton"] {
     border: 1px solid var(--border) !important;
     border-radius: 12px !important;
     color: var(--text) !important;
+    font-family: var(--font-ui) !important;
     font-weight: 600 !important;
+    letter-spacing: 0.04em !important;
     transition: all 0.15s ease !important;
 }
 a[data-testid="stLinkButton"]:hover {
@@ -286,6 +342,7 @@ a[data-testid="stLinkButton"]:hover {
 }
 .stTextInput label, .stTextArea label, .stSlider label {
     color: var(--text-muted) !important;
+    font-family: var(--font-body) !important;
     font-weight: 600 !important;
     font-size: 0.85rem !important;
 }
@@ -879,9 +936,9 @@ def render_idea_card_html(idea: Dict[str, Any], index: int) -> str:
     <h3 class="idea-title">{idea['app_name']}</h3>
     <p style="margin:0 0 0.5rem 0;color:#8b9cb3;font-size:0.88rem;">🎯 {idea['target_user']}</p>
     <p style="margin:0 0 0.75rem 0;color:#b6c4d8;font-size:0.92rem;">💡 {idea['problem']}</p>
-    <p style="margin:0 0 0.35rem 0;font-size:0.78rem;font-weight:700;color:#22d3ee;letter-spacing:0.06em;">CORE FEATURES</p>
+    <p style="margin:0 0 0.35rem 0;font-family:'Chakra Petch',sans-serif;font-size:0.75rem;font-weight:600;color:#22d3ee;letter-spacing:0.1em;">CORE FEATURES</p>
     <div style="margin-bottom:0.75rem;">{features}</div>
-    <p style="margin:0 0 0.35rem 0;font-size:0.78rem;font-weight:700;color:#818cf8;letter-spacing:0.06em;">UI VIBE</p>
+    <p style="margin:0 0 0.35rem 0;font-family:'Chakra Petch',sans-serif;font-size:0.75rem;font-weight:600;color:#818cf8;letter-spacing:0.1em;">UI VIBE</p>
     <div>{ui_tags}</div>
 </div>
 """.strip()
@@ -892,15 +949,16 @@ init_state()
 st.markdown(
     """
 <div class="hero">
-    <div class="hero-badge">WEB DEV × AI</div>
-    <h1 class="hero-title">내 웹앱, 직접 만들고 배포한다</h1>
-    <p class="hero-sub">아이디어 뽑기 → 프롬프트 생성 → Gemini로 코딩 → GitHub 업로드 → Streamlit 배포. 7단계로 끝.</p>
+    <p class="hero-logo">LINKFORGE</p>
+    <div class="hero-badge">IDEA → BUILD → SHIP</div>
+    <h1 class="hero-title">생각난 순간, <span class="hero-accent">LINK</span>로 배포</h1>
+    <p class="hero-sub">프롬프트 한 방이면 웹앱 완성. GitHub에 올리고 친구한테 <em>링크 던지기</em>까지 — 7스텝 클리어.</p>
 </div>
 """,
     unsafe_allow_html=True,
 )
 
-st.markdown('<p class="quick-label">Quick Launch</p>', unsafe_allow_html=True)
+st.markdown('<p class="quick-label">FAST TRACK</p>', unsafe_allow_html=True)
 link1, link2, link3 = st.columns(3)
 with link1:
     st.link_button("⚡ Gemini", GEMINI_URL, use_container_width=True, help="프롬프트 붙여넣고 코드 생성")
@@ -912,9 +970,9 @@ with link3:
 st.markdown(
     """
 <div class="stat-row">
-    <div class="stat-pill"><span class="stat-label">WORKFLOW</span><span class="stat-value">7단계 완성</span></div>
-    <div class="stat-pill"><span class="stat-label">PROMPT</span><span class="stat-value">3종 자동 생성</span></div>
-    <div class="stat-pill"><span class="stat-label">GALLERY</span><span class="stat-value">친구 작품 공유</span></div>
+    <div class="stat-pill"><span class="stat-label">PIPELINE</span><span class="stat-value">7스텝 클리어</span></div>
+    <div class="stat-pill"><span class="stat-label">AUTO PROMPT</span><span class="stat-value">3종 즉시 생성</span></div>
+    <div class="stat-pill"><span class="stat-label">SHOWCASE</span><span class="stat-value">작품 링크 공유</span></div>
 </div>
 """,
     unsafe_allow_html=True,
@@ -937,7 +995,7 @@ with tab0:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown(process_flow_markdown())
     st.markdown("---")
-    st.markdown('<p class="quick-label">Quick Launch</p>', unsafe_allow_html=True)
+    st.markdown('<p class="quick-label">FAST TRACK</p>', unsafe_allow_html=True)
     t0c1, t0c2, t0c3 = st.columns(3)
     with t0c1:
         st.link_button("Gemini (3·5단계)", GEMINI_URL, use_container_width=True)
@@ -1117,7 +1175,7 @@ with tab6:
                 f"""
 <div class="gallery-card">
     <span class="idea-rank">#{idx:02d}</span>
-    <h3 style="font-family:'Space Grotesk',sans-serif;margin:0 0 0.5rem 0;">{row['title']}</h3>
+    <h3 style="font-family:'Pretendard',sans-serif;font-weight:700;margin:0 0 0.5rem 0;">{row['title']}</h3>
     <p class="gallery-meta">by <span class="gallery-author">{row['name']}</span></p>
     <p class="gallery-meta">{row['description']}</p>
     <p style="font-size:0.75rem;color:#6b7f96;margin:0.4rem 0 0 0;">{row['submitted_at']}</p>
