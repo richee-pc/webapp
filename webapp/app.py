@@ -398,6 +398,8 @@ def init_state() -> None:
         "selected_design": "",
         "prompt_pack": {},
         "topic_input": "학교 생활",
+        "idea_input": "",
+        "refined_ideas": [],
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -446,6 +448,179 @@ def parse_json_array(raw: str) -> Optional[List[Dict[str, Any]]]:
     except Exception:
         return None
     return None
+
+
+def parse_json_object(raw: str) -> Optional[Dict[str, Any]]:
+    text = normalize_json(raw)
+    try:
+        obj = json.loads(text)
+        if isinstance(obj, dict):
+            return obj
+    except Exception:
+        pass
+
+    found = re.search(r"\{.*\}", text, flags=re.DOTALL)
+    if not found:
+        return None
+
+    try:
+        obj = json.loads(found.group(0))
+        if isinstance(obj, dict):
+            return obj
+    except Exception:
+        return None
+    return None
+
+
+def as_string_list(value: Any, fallback: List[str], limit: int = 5) -> List[str]:
+    if isinstance(value, list):
+        cleaned = [str(x).strip() for x in value if str(x).strip()]
+        if cleaned:
+            return cleaned[:limit]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return fallback[:limit]
+
+
+def normalize_refined_idea(item: Dict[str, Any], idea_text: str) -> Dict[str, Any]:
+    seed = idea_text.strip() or "나의 웹앱"
+    name = str(item.get("app_name", seed)).strip() or seed
+
+    return {
+        "app_name": name,
+        "target_user": str(item.get("target_user", f"{name}을(를) 즐기고 싶은 고등학생")),
+        "problem": str(item.get("problem", f"'{seed}' 아이디어는 있지만 규칙과 진행 방식이 정리되지 않았다")),
+        "concept_summary": str(item.get("concept_summary", f"{name}을(를) 친구들과 함께 즐길 수 있는 웹앱")),
+        "game_rules": as_string_list(
+            item.get("game_rules"),
+            [
+                "참가자는 라운드마다 결과를 예측하거나 선택한다",
+                "정답/성공 시 점수를 얻고, 실패 시 점수가 줄어든다",
+                "정해진 라운드 후 최고 점수가 우승한다",
+            ],
+        ),
+        "game_flow": as_string_list(
+            item.get("game_flow"),
+            [
+                "닉네임 입력",
+                "라운드/문제 선택",
+                "예측 또는 답 입력",
+                "결과 반영 및 점수 계산",
+                "랭킹 확인",
+            ],
+        ),
+        "core_features": as_string_list(
+            item.get("core_features"),
+            ["입력 폼", "점수 자동 계산", "랭킹 보드"],
+            limit=3,
+        ),
+        "fun_ui": as_string_list(
+            item.get("fun_ui"),
+            ["카드형 UI", "점수 애니메이션", "1위 하이라이트"],
+            limit=3,
+        ),
+        "mini_mission": str(item.get("mini_mission", "친구와 함께 1라운드 플레이")),
+    }
+
+
+def fallback_refine_idea(idea_text: str) -> List[Dict[str, Any]]:
+    seed = idea_text.strip() or "나의 웹앱"
+    is_game = any(word in seed for word in ["게임", "내기", "배팅", "베팅", "승부", "승률", "퀴즈", "대결", "토너먼트"])
+
+    if is_game:
+        rules = [
+            f"{seed} 참가자는 경기/라운드마다 결과를 예측한다",
+            "예측이 맞으면 점수를 얻고, 틀리면 점수를 잃는다",
+            "정해진 라운드 종료 후 최고 점수가 우승한다",
+            "동점일 경우 마지막 라운드 점수 또는 제출 시간으로 순위를 정한다",
+        ]
+        flow = [
+            "닉네임 입력 후 방 만들기",
+            "경기/라운드 선택",
+            "승패·스코어 예측 제출",
+            "실제 결과 입력",
+            "점수·승률 자동 계산",
+            "랭킹 보드 확인",
+        ]
+        features = ["예측 입력 폼", "점수·승률 자동 계산", "실시간 랭킹 보드"]
+        ui = ["경기 카드 UI", "점수 변화 애니메이션", "우승자 하이라이트"]
+    else:
+        rules = [
+            f"{seed} 사용 시 반드시 지켜야 할 핵심 조건 3가지를 화면에 안내한다",
+            "사용자 입력이 비어 있으면 진행할 수 없다",
+            "결과는 즉시 화면에 반영되고 이전 기록을 확인할 수 있다",
+        ]
+        flow = [
+            "시작 화면에서 목적 확인",
+            "필요 정보 입력",
+            "실행 버튼 클릭",
+            "결과/피드백 확인",
+            "기록 저장 또는 공유",
+        ]
+        features = ["핵심 입력 폼", "결과 생성/표시", "기록 저장"]
+        ui = ["카드형 레이아웃", "상태 배지", "결과 하이라이트"]
+
+    idea = normalize_refined_idea(
+        {
+            "app_name": seed,
+            "target_user": f"{seed}을(를) 사용하고 싶은 고등학생",
+            "problem": f"'{seed}'는 떠올랐지만 규칙·기능·진행 순서가 아직 정리되지 않았다",
+            "concept_summary": f"{seed}을(를) 누구나 쉽게 이해하고 바로 사용할 수 있게 만드는 웹앱",
+            "game_rules": rules,
+            "game_flow": flow,
+            "core_features": features,
+            "fun_ui": ui,
+            "mini_mission": "친구 2명에게 링크 공유",
+        },
+        seed,
+    )
+    return [idea]
+
+
+def refine_idea(idea_text: str) -> List[Dict[str, Any]]:
+    seed = idea_text.strip()
+    if not seed:
+        return []
+
+    prompt = f"""
+너는 고등학생 웹앱 기획 멘토다.
+
+# 학생이 적은 아이디어 (한 줄)
+{seed}
+
+# 목표
+위 아이디어를 고등학생이 HTML/Streamlit으로 만들 수 있도록 **구체화**하라.
+게임/서비스라면 규칙, 진행 방식, 점수/판정 로직까지 명확히 작성한다.
+
+# 필수 규칙
+1) 입력 아이디어 "{seed}"의 핵심 의도를 반드시 유지한다.
+2) app_name은 입력 아이디어를 기반으로 짧고 명확하게 짓는다.
+3) game_rules는 실제로 적용 가능한 규칙 3~5개.
+4) game_flow는 사용자가 화면에서 거치는 단계 4~6개.
+5) core_features는 웹앱에 꼭 필요한 기능 3개.
+6) 고등학생 수준에서 구현 가능한 단순한 범위로 제한한다.
+
+반드시 JSON 객체 하나만 출력하고 다른 텍스트는 금지.
+키:
+- app_name
+- target_user
+- problem
+- concept_summary
+- game_rules (문자열 배열)
+- game_flow (문자열 배열)
+- core_features (문자열 배열 3개)
+- fun_ui (문자열 배열 3개)
+- mini_mission
+""".strip()
+
+    try:
+        raw = call_gemini(prompt, temperature=0.5)
+        parsed = parse_json_object(raw)
+        if not parsed:
+            return fallback_refine_idea(seed)
+        return [normalize_refined_idea(parsed, seed)]
+    except Exception:
+        return fallback_refine_idea(seed)
 
 
 def call_gemini(prompt: str, temperature: float = 0.8) -> str:
@@ -642,9 +817,24 @@ def generate_ideas(topic: str, count: int) -> List[Dict[str, Any]]:
 
 
 def fill_prompt_from_idea(idea: Dict[str, Any]) -> None:
-    st.session_state.selected_idea = idea["app_name"] + "\n문제: " + idea["problem"]
+    lines = [idea["app_name"]]
+    if idea.get("concept_summary"):
+        lines.append(f"컨셉: {idea['concept_summary']}")
+    lines.append(f"문제: {idea['problem']}")
+    if idea.get("game_rules"):
+        lines.append("규칙: " + " / ".join(idea["game_rules"]))
+    if idea.get("game_flow"):
+        lines.append("진행 방식: " + " → ".join(idea["game_flow"]))
+
+    st.session_state.selected_idea = "\n".join(lines)
     st.session_state.selected_target = idea["target_user"]
-    st.session_state.selected_features = ", ".join(idea["core_features"] + idea["fun_ui"])
+
+    feature_parts = list(idea.get("core_features", []))
+    if idea.get("game_rules"):
+        feature_parts.extend(idea["game_rules"][:2])
+    if idea.get("game_flow"):
+        feature_parts.extend(idea["game_flow"][:2])
+    st.session_state.selected_features = ", ".join(feature_parts + idea.get("fun_ui", []))
     st.session_state.selected_design = ", ".join(idea["fun_ui"])
     st.toast("아이디어 적용 완료! 프롬프트 탭으로 가보세요", icon="⚡")
 
@@ -1002,14 +1192,39 @@ def add_shared_row(name: str, title: str, description: str, url: str) -> None:
 
 
 def render_idea_card_html(idea: Dict[str, Any], index: int) -> str:
-    features = "".join(f'<span class="idea-tag">{f}</span>' for f in idea["core_features"])
-    ui_tags = "".join(f'<span class="idea-tag">{u}</span>' for u in idea["fun_ui"])
+    features = "".join(f'<span class="idea-tag">{f}</span>' for f in idea.get("core_features", []))
+    ui_tags = "".join(f'<span class="idea-tag">{u}</span>' for u in idea.get("fun_ui", []))
+
+    extra_blocks = ""
+    if idea.get("concept_summary"):
+        extra_blocks += f'<p style="margin:0 0 0.75rem 0;color:#c4d4e8;font-size:0.9rem;">📌 {idea["concept_summary"]}</p>'
+
+    if idea.get("game_rules"):
+        rules = "".join(
+            f'<li style="margin-bottom:0.25rem;color:#b6c4d8;font-size:0.88rem;">{rule}</li>'
+            for rule in idea["game_rules"]
+        )
+        extra_blocks += (
+            '<p style="margin:0 0 0.35rem 0;font-family:\'Chakra Petch\',sans-serif;font-size:0.75rem;'
+            'font-weight:600;color:#fbbf24;letter-spacing:0.1em;">RULES</p>'
+            f'<ul style="margin:0 0 0.75rem 1.1rem;padding:0;">{rules}</ul>'
+        )
+
+    if idea.get("game_flow"):
+        flow = " → ".join(idea["game_flow"])
+        extra_blocks += (
+            '<p style="margin:0 0 0.35rem 0;font-family:\'Chakra Petch\',sans-serif;font-size:0.75rem;'
+            'font-weight:600;color:#a78bfa;letter-spacing:0.1em;">FLOW</p>'
+            f'<p style="margin:0 0 0.75rem 0;color:#b6c4d8;font-size:0.88rem;line-height:1.5;">{flow}</p>'
+        )
+
     return f"""
 <div class="idea-card">
     <span class="idea-rank">#{index:02d}</span>
     <h3 class="idea-title">{idea['app_name']}</h3>
     <p style="margin:0 0 0.5rem 0;color:#8b9cb3;font-size:0.88rem;">🎯 {idea['target_user']}</p>
     <p style="margin:0 0 0.75rem 0;color:#b6c4d8;font-size:0.92rem;">💡 {idea['problem']}</p>
+    {extra_blocks}
     <p style="margin:0 0 0.35rem 0;font-family:'Chakra Petch',sans-serif;font-size:0.75rem;font-weight:600;color:#22d3ee;letter-spacing:0.1em;">CORE FEATURES</p>
     <div style="margin-bottom:0.75rem;">{features}</div>
     <p style="margin:0 0 0.35rem 0;font-family:'Chakra Petch',sans-serif;font-size:0.75rem;font-weight:600;color:#818cf8;letter-spacing:0.1em;">UI VIBE</p>
@@ -1080,7 +1295,7 @@ with tab0:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab1:
-    st.markdown('<p class="section-head"><span>//</span>아이디어 추천</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-head"><span>//</span>키워드로 아이디어 뽑기</p>', unsafe_allow_html=True)
     st.session_state.topic_input = st.text_input(
         "주제 키워드",
         value=st.session_state.topic_input,
@@ -1097,6 +1312,34 @@ with tab1:
         for i, idea in enumerate(st.session_state.ideas, start=1):
             st.markdown(render_idea_card_html(idea, i), unsafe_allow_html=True)
             if st.button("✅ 이 아이디어 선택", key=f"pick_{i}", use_container_width=True):
+                fill_prompt_from_idea(idea)
+
+    st.divider()
+    st.markdown('<p class="section-head"><span>//</span>내 아이디어 구체화</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="tip">한 줄로 적은 아이디어를 <b>규칙 · 진행 방식 · 핵심 기능</b>까지 펼쳐줘요. '
+        "예: <i>축구 승률 내기 게임</i></div>",
+        unsafe_allow_html=True,
+    )
+    st.session_state.idea_input = st.text_area(
+        "내 아이디어 한 줄",
+        value=st.session_state.idea_input,
+        height=80,
+        placeholder="예: 축구 승률 내기 게임, 급식 메뉴 투표, 수행평가 D-day 카운터",
+        help="떠오른 아이디어를 그대로 적으면 구체적인 기획안으로 바꿔줘요.",
+    )
+
+    if st.button("🔍 아이디어 구체화", type="primary", use_container_width=True):
+        if not st.session_state.idea_input.strip():
+            st.error("구체화할 아이디어를 한 줄로 입력해 주세요.")
+        else:
+            st.session_state.refined_ideas = refine_idea(st.session_state.idea_input)
+
+    if st.session_state.refined_ideas:
+        st.markdown('<div class="tip">구체화된 기획안을 선택하면 <b>프롬프트 탭</b>에 규칙·진행 방식까지 자동 입력됩니다.</div>', unsafe_allow_html=True)
+        for i, idea in enumerate(st.session_state.refined_ideas, start=1):
+            st.markdown(render_idea_card_html(idea, i), unsafe_allow_html=True)
+            if st.button("✅ 이 기획안 선택", key=f"refined_pick_{i}", use_container_width=True):
                 fill_prompt_from_idea(idea)
 
 with tab2:
