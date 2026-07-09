@@ -50,6 +50,10 @@ st.markdown(
 
 LOCAL_BOARD_FILE = Path(__file__).resolve().parent / "shared_links.json"
 
+GEMINI_URL = "https://gemini.google.com/"
+GITHUB_URL = "https://github.com/"
+STREAMLIT_URL = "https://share.streamlit.io/"
+
 
 def init_state() -> None:
     defaults = {
@@ -61,7 +65,6 @@ def init_state() -> None:
         "prompt_pack": {},
         "topic_input": "학교 생활",
         "interest_input": "게임, 음악, 친구, 진로",
-        "level": "입문",
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -180,12 +183,11 @@ def fallback_ideas(topic: str, count: int) -> List[Dict[str, Any]]:
     return out
 
 
-def generate_ideas(topic: str, interests: str, level: str, count: int) -> List[Dict[str, Any]]:
+def generate_ideas(topic: str, interests: str, count: int) -> List[Dict[str, Any]]:
     prompt = f"""
 너는 학생 프로젝트 아이디어 코치야.
 주제 키워드: {topic}
 관심사: {interests}
-난이도: {level}
 개수: {count}
 
 반드시 JSON 배열만 출력하고 다른 텍스트는 금지.
@@ -244,7 +246,6 @@ def build_prompt_pack(
     target_user: str,
     required_features: str,
     design_style: str,
-    level: str,
 ) -> Dict[str, str]:
     design_section = design_style.strip() or "밝고 친근한 학생용 UI, 카드형 레이아웃, 모바일 반응형"
 
@@ -258,7 +259,6 @@ def build_prompt_pack(
 # 프로젝트 정보
 - 아이디어: {app_idea}
 - 타겟 사용자: {target_user}
-- 난이도: {level}
 - 필수 기능: {required_features}
 - 원하는 디자인/분위기: {design_section}
 
@@ -291,7 +291,6 @@ def build_prompt_pack(
 # 프로젝트 정보
 - 아이디어: {app_idea}
 - 타겟 사용자: {target_user}
-- 난이도: {level}
 - 필수 기능: {required_features}
 - 원하는 디자인/분위기: {design_section}
 
@@ -599,15 +598,19 @@ init_state()
 st.markdown('<div class="main-title">✨ 학생용 AI 웹앱 메이커</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">핵심 기능 전체 + 공유 탭은 설정 없이 바로 동작해요.</div>', unsafe_allow_html=True)
 
-k1, k2, k3 = st.columns(3)
+link1, link2, link3 = st.columns(3)
+with link1:
+    st.link_button("✨ Gemini 열기", GEMINI_URL, use_container_width=True, help="프롬프트를 붙여넣어 코드를 생성해요")
+with link2:
+    st.link_button("🐙 GitHub 열기", GITHUB_URL, use_container_width=True, help="저장소를 만들고 파일을 업로드해요")
+with link3:
+    st.link_button("🚀 Streamlit 배포 열기", STREAMLIT_URL, use_container_width=True, help="웹앱을 배포하고 공유 링크를 받아요")
+
+k1, k2 = st.columns(2)
 with k1:
     st.metric("핵심 기능", "모두 포함")
 with k2:
     st.metric("공유 탭", "즉시 사용 가능")
-with k3:
-    level_options = ["입문", "기초", "중급"]
-    level_index = level_options.index(st.session_state.level) if st.session_state.level in level_options else 0
-    st.session_state.level = st.selectbox("난이도", level_options, index=level_index)
 
 
 tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
@@ -625,6 +628,15 @@ tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
 with tab0:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown(process_flow_markdown())
+    st.markdown("---")
+    st.markdown("**바로가기**")
+    t0c1, t0c2, t0c3 = st.columns(3)
+    with t0c1:
+        st.link_button("Gemini (3·5단계)", GEMINI_URL, use_container_width=True)
+    with t0c2:
+        st.link_button("GitHub (4·6단계)", GITHUB_URL, use_container_width=True)
+    with t0c3:
+        st.link_button("Streamlit (7단계)", STREAMLIT_URL, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab1:
@@ -640,7 +652,6 @@ with tab1:
         st.session_state.ideas = generate_ideas(
             st.session_state.topic_input,
             st.session_state.interest_input,
-            st.session_state.level,
             count,
         )
 
@@ -663,6 +674,7 @@ with tab1:
 
 with tab2:
     st.subheader("프롬프트 생성 도우미")
+    st.link_button("✨ Gemini에서 코드 생성하기", GEMINI_URL, help="프롬프트를 복사한 뒤 Gemini에 붙여넣으세요")
     app_idea = st.text_area("아이디어 설명", value=st.session_state.selected_idea, height=90)
     target_user = st.text_input("타겟 사용자", value=st.session_state.selected_target)
     required_features = st.text_area("필수 기능", value=st.session_state.selected_features, height=90)
@@ -684,7 +696,6 @@ with tab2:
                 target_user.strip() or "학생",
                 required_features.strip(),
                 design_style.strip(),
-                st.session_state.level,
             )
 
     if st.session_state.prompt_pack:
@@ -694,30 +705,35 @@ with tab2:
         st.markdown("### A. HTML 코드 생성 프롬프트 (3단계에서 사용)")
         st.code(pack["html_prompt"], language="text")
         st.download_button("HTML 프롬프트 다운로드", data=pack["html_prompt"], file_name="prompt_html.txt", mime="text/plain")
+        st.link_button("Gemini에서 HTML 만들기", GEMINI_URL, key="gemini_html")
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("### B. Streamlit 배포용 app.py 생성 프롬프트 (5단계에서 사용)")
         st.code(pack["streamlit_prompt"], language="text")
         st.download_button("app.py 프롬프트 다운로드", data=pack["streamlit_prompt"], file_name="prompt_app_py.txt", mime="text/plain")
+        st.link_button("Gemini에서 app.py 만들기", GEMINI_URL, key="gemini_app")
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown("### C. HTML → app.py 변환 프롬프트 (이미 만든 HTML이 있을 때)")
         st.code(pack["convert_prompt"], language="text")
         st.download_button("변환 프롬프트 다운로드", data=pack["convert_prompt"], file_name="prompt_convert.txt", mime="text/plain")
+        st.link_button("Gemini에서 변환하기", GEMINI_URL, key="gemini_convert")
         st.markdown("</div>", unsafe_allow_html=True)
 
 with tab3:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### 3단계: HTML 만들기")
     st.markdown("1. **2번 탭**에서 **A 프롬프트**를 복사해 Gemini에 붙여넣는다.")
+    st.link_button("✨ Gemini 열기", GEMINI_URL, key="tab3_gemini_html")
     st.markdown("2. 생성된 `index.html` 코드를 복사해 파일로 저장한다.")
     st.markdown("3. 브라우저에서 열어 버튼·입력·결과 화면이 잘 되는지 확인한다.")
     st.markdown("4. 수정이 필요하면 에러 문구나 원하는 변경 사항을 Gemini에 그대로 전달한다.")
     st.markdown("")
     st.markdown("### 5단계: app.py 만들기")
     st.markdown("1. **2번 탭**에서 **B 프롬프트**를 복사해 Gemini에 붙여넣는다.")
+    st.link_button("✨ Gemini 열기", GEMINI_URL, key="tab3_gemini_app")
     st.markdown("2. `app.py`는 `htmls/index.html`을 읽어 보여주는 **배포용 껍데기** 역할이다.")
     st.markdown("3. `requirements.txt`도 함께 생성되므로 같이 저장한다.")
     st.markdown("")
@@ -727,6 +743,7 @@ with tab3:
 with tab4:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### 4·6단계: GitHub 업로드")
+    st.link_button("🐙 GitHub 열기", GITHUB_URL, use_container_width=False)
     st.markdown("**최종 폴더 구조**를 먼저 맞춘 뒤 업로드하세요.")
     st.code(
         """내-웹앱/
@@ -758,7 +775,8 @@ git push -u origin main""",
 with tab5:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### 7단계: Streamlit Community Cloud 배포")
-    st.markdown("1. [share.streamlit.io](https://share.streamlit.io/) 에 GitHub 계정으로 로그인")
+    st.link_button("🚀 Streamlit 배포 사이트 열기", STREAMLIT_URL, use_container_width=False)
+    st.markdown("1. GitHub 계정으로 로그인")
     st.markdown("2. **New app** 클릭")
     st.markdown("3. **Repository** 에 내 저장소 선택")
     st.markdown("4. **Main file path** 에 `app.py` 입력")
