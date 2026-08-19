@@ -357,7 +357,7 @@ GLOBAL_STYLES = """
 .stTabs [data-baseweb="tab"] {
     font-family: var(--font-ui);
     font-weight: 700;
-    font-size: 0.84rem;
+    font-size: 0.8rem;
     letter-spacing: 0.01em;
     color: var(--text-muted);
     border-radius: 12px;
@@ -499,6 +499,96 @@ div[data-testid="stMetric"] {
     color: var(--text) !important;
 }
 hr { border-color: #fed7aa !important; }
+
+.now-box {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--accent);
+    border-radius: 16px;
+    padding: 1rem 1.15rem 1.05rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+}
+.now-kicker {
+    margin: 0 0 0.2rem 0;
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+}
+.now-title {
+    margin: 0 0 0.55rem 0;
+    font-size: 1.08rem;
+    font-weight: 800;
+    color: var(--text);
+}
+.now-line {
+    margin: 0 0 0.28rem 0;
+    color: #4b5563;
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+.now-next {
+    margin: 0.55rem 0 0 0;
+    font-weight: 700;
+    color: #0369a1;
+    font-size: 0.92rem;
+}
+.guide-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 1rem 0;
+}
+.guide-item {
+    flex: 1;
+    min-width: 108px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 0.7rem 0.6rem 0.75rem;
+    text-align: center;
+    box-shadow: 0 8px 18px rgba(14, 165, 233, 0.05);
+}
+.guide-item span {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #fb923c, #f43f5e);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+.guide-item b {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.84rem;
+    color: var(--text);
+}
+.guide-item small {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+}
+.easy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.55rem;
+    margin: 0.4rem 0 0.9rem 0;
+}
+.easy-card {
+    background: #fffaf5;
+    border: 1px solid #fed7aa;
+    border-radius: 14px;
+    padding: 0.7rem 0.85rem;
+}
+.easy-card b { display: block; color: #c2410c; font-size: 0.82rem; margin-bottom: 0.15rem; }
+.easy-card span { color: #4b5563; font-size: 0.86rem; line-height: 1.45; }
 </style>
 """
 
@@ -553,27 +643,60 @@ def has_gemini_api() -> bool:
 
 def render_gemini_api_panel() -> None:
     secret_key = get_secret_api_key()
-    with st.expander("✨ Gemini AI 연동 (선택 · 더 좋은 결과)", expanded=not secret_key):
+    with st.expander("✨ AI를 더 똑똑하게 쓰기 (선택 · 없어도 수업 가능)", expanded=not secret_key):
         if secret_key:
             st.markdown(
                 '<span class="ai-badge">AI MODE · ON (배포 secrets 연동)</span>',
                 unsafe_allow_html=True,
             )
-            st.caption("Streamlit secrets에 API 키가 설정되어 AI 고품질 모드로 동작합니다.")
+            st.caption("선생님이 이미 AI를 연결해 두었어요. 그냥 아래 칸에 아이디어만 적으면 됩니다.")
         else:
             if has_gemini_api():
                 st.markdown('<span class="ai-badge">AI MODE · ON</span>', unsafe_allow_html=True)
             else:
                 st.markdown('<span class="ai-badge off">BASIC MODE · API 없음</span>', unsafe_allow_html=True)
-                st.caption("API 키 없이도 기본 템플릿으로 동작합니다. 키를 입력하면 AI가 맞춤 아이디어를 생성해요.")
+                st.caption("이 칸은 비워도 수업을 할 수 있어요. 키를 넣으면 AI가 아이디어를 더 잘 만들어 줍니다.")
             st.session_state.gemini_api_key = st.text_input(
-                "Gemini API 키",
+                "Gemini API 키 (선생님 안내가 있을 때만)",
                 type="password",
                 value=st.session_state.gemini_api_key,
                 placeholder="AIza...",
                 help="Google AI Studio에서 발급받은 키를 입력하세요.",
             )
-            st.caption("선생님이 배포 시 secrets에 `GEMINI_API_KEY`를 넣으면 학생들이 따로 입력하지 않아도 됩니다.")
+            st.caption("선생님이 배포할 때 secrets에 GEMINI_API_KEY를 넣으면 학생들은 입력하지 않아도 됩니다.")
+
+
+def render_now_box(now: str, why: str, how: str, nxt: str) -> None:
+    st.markdown(
+        f"""
+<div class="now-box">
+    <p class="now-kicker">지금 이 탭에서</p>
+    <p class="now-title">{now}</p>
+    <p class="now-line"><b>왜 하나요?</b> {why}</p>
+    <p class="now-line"><b>어떻게 하나요?</b> {how}</p>
+    <p class="now-next">다 했으면 → {nxt}</p>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+
+def render_class_guide_strip() -> None:
+    st.markdown('<p class="quick-label">오늘 수업 순서 · 왼쪽부터 그대로 따라가면 됩니다</p>', unsafe_allow_html=True)
+    st.markdown(
+        """
+<div class="guide-row">
+    <div class="guide-item"><span>1</span><b>생각 고르기</b><small>2. 아이디어 탭</small></div>
+    <div class="guide-item"><span>2</span><b>부탁문 만들기</b><small>3. 프롬프트 탭</small></div>
+    <div class="guide-item"><span>3</span><b>화면 받기</b><small>4. 화면 만들기 탭</small></div>
+    <div class="guide-item"><span>4</span><b>가방에 넣기</b><small>5. GitHub 탭</small></div>
+    <div class="guide-item"><span>5</span><b>배포 파일</b><small>다시 4번 탭</small></div>
+    <div class="guide-item"><span>6</span><b>나머지 올리기</b><small>다시 5번 탭</small></div>
+    <div class="guide-item"><span>7</span><b>링크로 공개</b><small>6. 배포 탭</small></div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
 
 def render_idea_list(ideas: List[Dict[str, Any]], key_prefix: str, button_label: str) -> None:
@@ -1002,7 +1125,7 @@ def fill_prompt_from_idea(idea: Dict[str, Any]) -> None:
         feature_parts.extend(idea["game_flow"][:2])
     st.session_state.selected_features = ", ".join(feature_parts + idea.get("fun_ui", []))
     st.session_state.selected_design = ", ".join(idea["fun_ui"])
-    st.toast("아이디어 적용 완료! 프롬프트 탭으로 가보세요", icon="✨")
+    st.toast("좋아요! 이제 위쪽 「3. 프롬프트」 탭으로 가서 부탁문을 만들어요", icon="✨")
 
 
 def build_prompt_pack(
@@ -1114,44 +1237,67 @@ def build_prompt_pack(
 
 def process_flow_markdown() -> str:
     return """
-## 학생용 웹앱 제작·배포 로드맵
+## 오늘 수업: 생각을 링크로 만들기
 
-> **핵심 흐름:** 아이디어 → 프롬프트 → HTML 제작 → GitHub 업로드 → app.py 생성 → 전체 업로드 → Streamlit 배포·공유
+코딩을 몰라도 됩니다. **AI에게 부탁 → 파일을 저장 → 인터넷 가방에 넣기 → 링크로 공개** 순서만 따라가면 친구가 핸드폰으로 내 웹앱을 열 수 있어요.
+
+> **한 줄 흐름:** 아이디어 → 프롬프트(부탁문) → HTML 화면 → GitHub에 올리기 → app.py 만들기 → 나머지 올리기 → Streamlit으로 링크 받기
+
+### 어려운 말, 쉽게 보기
+
+| 어려운 말 | 쉽게 말하면 |
+|------|--------|
+| 프롬프트 | AI에게 보내는 **부탁 편지** |
+| HTML / `index.html` | 화면에 보이는 **웹페이지 파일** |
+| `app.py` | Streamlit이 그 웹페이지를 열어주는 **안내 파일** |
+| `requirements.txt` | “이 앱을 켜려면 streamlit이 필요해요”라고 적힌 **재료 목록** |
+| GitHub | 파일을 넣어 두는 **인터넷 가방** |
+| Repository | GitHub에 만든 **내 폴더** |
+| Streamlit | 가방 속 파일을 **링크로 바꿔 주는 곳** |
+| 배포 | 친구 핸드폰에서도 열리게 **공개하기** |
 
 ---
 
-### 1단계: 기획 — 아이디어 구상
+### 1단계: 만들고 싶은 것을 정하기
+**어디서?** 위쪽 **「2. 아이디어」** 탭
+
 - **누구를 위한 앱인가?** (예: 시험 준비하는 친구, 동아리 부원)
 - **어떤 문제를 풀까?** (예: 공부 계획이 자꾸 밀림)
 - **핵심 기능 3가지**를 적는다.
 - **원하는 디자인**도 함께 정한다. (예: 파란색·미니멀, 게임 느낌, 카드형 레이아웃)
 
-✅ **완료 기준:** 아이디어 + 기능 + 디자인 메모가 준비됨
+✅ **이 단계가 끝나면:** 아이디어 + 기능 + 디자인 메모가 준비됨
 
 ---
 
-### 2단계: 프롬프트 만들기
-- **1번 탭**에서 아이디어를 추천받거나, 직접 적은 내용을 **2번 탭**에 입력한다.
+### 2단계: AI에게 보낼 부탁문(프롬프트) 만들기
+**어디서?** 위쪽 **「3. 프롬프트」** 탭
+
+- **2. 아이디어** 탭에서 고르거나, 내가 적은 내용이 자동으로 들어온다.
 - **기능**뿐 아니라 **디자인/분위기**도 프롬프트에 포함한다.
-- 아래 **2종 프롬프트**를 준비한다.
-  - **A. HTML 생성 프롬프트** → `index.html` 만들 때 사용
-  - **B. Streamlit 배포 프롬프트** → `app.py` 만들 때 사용
+- 아래 **부탁문 2개**를 준비한다. (C는 이미 HTML이 있을 때만)
+  - **A. HTML 생성 프롬프트** → `index.html`(화면 파일) 만들 때 사용
+  - **B. Streamlit 배포 프롬프트** → `app.py`(안내 파일) 만들 때 사용
 
-✅ **완료 기준:** A·B 프롬프트를 복사해 둠
+✅ **이 단계가 끝나면:** A·B 프롬프트를 복사해 둠
 
 ---
 
-### 3단계: HTML 웹앱 만들기
+### 3단계: 화면(HTML 웹앱) 만들기
+**어디서?** 위쪽 **「4. 화면 만들기」** 탭 · Gemini 사용
+
 1. Gemini에 **A 프롬프트**를 붙여넣는다.
 2. 생성된 `index.html` 코드를 복사한다.
-3. 컴퓨터에 `index.html`로 저장한 뒤, 브라우저로 열어 **UI·기능**을 확인한다.
+3. 컴퓨터에 `index.html`로 저장한 뒤, 브라우저로 열어 **버튼·입력·결과가 잘 되는지** 확인한다.
 4. 마음에 들 때까지 Gemini에게 수정을 요청한다. (에러 문구를 그대로 붙여넣기)
 
-✅ **완료 기준:** 브라우저에서 잘 동작하는 `index.html` 확보
+✅ **이 단계가 끝나면:** 브라우저에서 잘 동작하는 `index.html` 확보
 
 ---
 
-### 4단계: GitHub 저장소 준비
+### 4단계: GitHub 가방 만들고 화면 파일 넣기
+**어디서?** 위쪽 **「5. GitHub」** 탭 · **웹사이트에서 올리기만 해도 됩니다** (명령어는 선택)
+
 1. [GitHub](https://github.com)에서 **새 저장소(Repository)** 를 만든다.
 2. 아래 **폴더 구조**를 미리 계획한다.
 
@@ -1164,23 +1310,28 @@ def process_flow_markdown() -> str:
 ```
 
 3. `htmls` 폴더를 만들고, 그 안에 `index.html`을 넣는다.
+   - 웹에서 올릴 때 파일 이름을 `htmls/index.html`로 적으면 폴더가 자동으로 생겨요.
 4. GitHub에 **첫 업로드**를 한다. (웹에서 직접 업로드하거나 Git 명령어 사용)
 
-✅ **완료 기준:** GitHub에 `htmls/index.html`이 올라가 있음
+✅ **이 단계가 끝나면:** GitHub에 `htmls/index.html`이 올라가 있음
 
 ---
 
-### 5단계: Streamlit 배포용 app.py 만들기
+### 5단계: 배포용 안내 파일(app.py) 만들기
+**어디서?** 다시 **「4. 화면 만들기」** 탭 · Gemini 사용
+
 1. Gemini에 **B 프롬프트**를 붙여넣는다.
 2. 생성된 `app.py`와 `requirements.txt`를 복사한다.
 3. `app.py`는 **`htmls/index.html` 파일을 열어 보여주는 역할**을 한다.
-4. 로컬에서 `streamlit run app.py`로 미리 확인한다. (선택)
+4. 로컬에서 `streamlit run app.py`로 미리 확인한다. (선택 · 안 해도 다음 단계 가능)
 
-✅ **완료 기준:** `app.py` + `requirements.txt` 준비 완료
+✅ **이 단계가 끝나면:** `app.py` + `requirements.txt` 준비 완료
 
 ---
 
-### 6단계: GitHub에 전체 파일 업로드
+### 6단계: GitHub 가방에 나머지 파일 넣기
+**어디서?** 다시 **「5. GitHub」** 탭
+
 1. 저장소 루트에 `app.py`, `requirements.txt`를 추가한다.
 2. 최종 구조가 아래와 같은지 확인한다.
 
@@ -1194,31 +1345,33 @@ def process_flow_markdown() -> str:
 
 3. 변경 사항을 GitHub에 **다시 업로드(커밋·푸시)** 한다.
 
-✅ **완료 기준:** GitHub에 3개 파일(또는 폴더 포함 전체 구조)이 모두 있음
+✅ **이 단계가 끝나면:** GitHub에 3개 파일(또는 폴더 포함 전체 구조)이 모두 있음
 
 ---
 
-### 7단계: Streamlit으로 배포하고 공유
+### 7단계: Streamlit으로 링크로 공개하고 공유
+**어디서?** 위쪽 **「6. 배포」** 탭, 자랑은 **「7. 갤러리」** 탭
+
 1. [share.streamlit.io](https://share.streamlit.io/)에 GitHub 계정으로 로그인한다.
 2. **New app** → 저장소 선택 → **Main file path**에 `app.py` 입력 → **Deploy**
 3. 배포가 끝나면 `https://xxxx.streamlit.app` 형태의 **공유 링크**가 생긴다.
 4. 링크를 친구들에게 보내고, **갤러리 탭**에도 제출한다.
 
-✅ **완료 기준:** 친구가 링크로 내 웹앱에 접속 가능
+✅ **이 단계가 끝나면:** 친구가 링크로 내 웹앱에 접속 가능
 
 ---
 
 ### 한눈에 보는 순서 요약
 
-| 순서 | 할 일 | 결과물 |
-|------|--------|--------|
-| 1 | 아이디어·디자인 구상 | 기획 메모 |
-| 2 | 프롬프트 2종 생성 | A(HTML), B(app.py) |
-| 3 | Gemini로 HTML 생성 | `index.html` |
-| 4 | GitHub 저장소 + htmls 업로드 | `htmls/index.html` |
-| 5 | Gemini로 app.py 생성 | `app.py`, `requirements.txt` |
-| 6 | GitHub에 전체 업로드 | 완성된 저장소 |
-| 7 | Streamlit 배포·공유 | 공유 URL |
+| 순서 | 할 일 | 결과물 | 탭 |
+|------|--------|--------|------|
+| 1 | 아이디어·디자인 구상 | 기획 메모 | 2. 아이디어 |
+| 2 | 프롬프트 2종 생성 | A(HTML), B(app.py) | 3. 프롬프트 |
+| 3 | Gemini로 HTML 생성 | `index.html` | 4. 화면 만들기 |
+| 4 | GitHub 저장소 + htmls 업로드 | `htmls/index.html` | 5. GitHub |
+| 5 | Gemini로 app.py 생성 | `app.py`, `requirements.txt` | 4. 화면 만들기 |
+| 6 | GitHub에 전체 업로드 | 완성된 저장소 | 5. GitHub |
+| 7 | Streamlit 배포·공유 | 공유 URL | 6. 배포 |
 """.strip()
 
 
@@ -1400,29 +1553,31 @@ st.markdown(
     """
 <div class="hero">
     <p class="hero-logo">LINKFORGE</p>
-    <div class="hero-badge">아이디어 → 만들기 → 배포</div>
-    <h1 class="hero-title">생각난 순간, <span class="hero-accent">LINK</span>로 배포</h1>
-    <p class="hero-sub">프롬프트 한 방이면 웹앱 완성. GitHub에 올리고 친구한테 <em>링크 던지기</em>까지 — 7스텝이면 끝.</p>
+    <div class="hero-badge">1학년 수업 · 코딩 몰라도 따라갈 수 있어요</div>
+    <h1 class="hero-title">오늘 할 일: 생각을 <span class="hero-accent">LINK</span>로 만들기</h1>
+    <p class="hero-sub">AI에게 부탁하면 웹앱이 나와요. 아래 탭을 <em>1번부터 7번까지</em> 순서대로 누르면 됩니다.</p>
 </div>
 """,
     unsafe_allow_html=True,
 )
 
-st.markdown('<p class="quick-label">바로가기</p>', unsafe_allow_html=True)
+render_class_guide_strip()
+
+st.markdown('<p class="quick-label">수업에서 자주 여는 사이트</p>', unsafe_allow_html=True)
 link1, link2, link3 = st.columns(3)
 with link1:
-    st.link_button("✨ Gemini", GEMINI_URL, use_container_width=True, help="프롬프트 붙여넣고 코드 생성")
+    st.link_button("✨ Gemini (AI에게 부탁)", GEMINI_URL, use_container_width=True, help="프롬프트를 붙여넣고 코드를 받아요")
 with link2:
-    st.link_button("⌨ GitHub", GITHUB_URL, use_container_width=True, help="저장소 만들고 파일 업로드")
+    st.link_button("⌨ GitHub (파일 가방)", GITHUB_URL, use_container_width=True, help="만든 파일을 인터넷에 보관해요")
 with link3:
-    st.link_button("🚀 Streamlit", STREAMLIT_URL, use_container_width=True, help="배포하고 공유 링크 받기")
+    st.link_button("🚀 Streamlit (링크로 공개)", STREAMLIT_URL, use_container_width=True, help="가방 속 파일을 공유 링크로 바꿔요")
 
 st.markdown(
     """
 <div class="stat-row">
-    <div class="stat-pill"><span class="stat-label">따라가기</span><span class="stat-value">7단계 로드맵</span></div>
-    <div class="stat-pill"><span class="stat-label">프롬프트</span><span class="stat-value">3종 즉시 생성</span></div>
-    <div class="stat-pill"><span class="stat-label">갤러리</span><span class="stat-value">작품 링크 공유</span></div>
+    <div class="stat-pill"><span class="stat-label">오늘 목표</span><span class="stat-value">친구에게 링크 보내기</span></div>
+    <div class="stat-pill"><span class="stat-label">코딩</span><span class="stat-value">몰라도 따라가면 됩니다</span></div>
+    <div class="stat-pill"><span class="stat-label">순서</span><span class="stat-value">1번 탭부터 차근차근</span></div>
 </div>
 """,
     unsafe_allow_html=True,
@@ -1431,82 +1586,119 @@ st.markdown(
 
 tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
     [
-        "📋 로드맵",
-        "💡 아이디어",
-        "📝 프롬프트",
-        "⚙️ 코드 생성",
-        "⌨ GitHub",
-        "🚀 배포",
-        "🎮 갤러리",
+        "1. 오늘 할 일",
+        "2. 아이디어",
+        "3. 프롬프트",
+        "4. 화면 만들기",
+        "5. GitHub",
+        "6. 배포",
+        "7. 갤러리",
     ]
 )
 
 with tab0:
+    render_now_box(
+        "수업 전체를 한눈에 보기",
+        "길을 잃지 않으려고요. 오늘 끝은 ‘내 웹앱 링크를 친구에게 보내는 것’입니다.",
+        "아래 설명을 읽고, 준비되면 「2. 아이디어」 탭으로 가면 됩니다.",
+        "2. 아이디어 탭에서 만들고 싶은 것을 정해요",
+    )
+    st.markdown(
+        """
+<div class="easy-grid">
+    <div class="easy-card"><b>Gemini</b><span>AI 친구에게 “이렇게 만들어줘”라고 말하는 곳</span></div>
+    <div class="easy-card"><b>GitHub</b><span>만든 파일을 넣어 두는 인터넷 가방</span></div>
+    <div class="easy-card"><b>Streamlit</b><span>가방 속 파일을 핸드폰 링크로 바꿔 주는 곳</span></div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown(process_flow_markdown())
     st.markdown("---")
-    st.markdown('<p class="quick-label">바로가기</p>', unsafe_allow_html=True)
+    st.markdown('<p class="quick-label">지금 바로 열어둘 사이트</p>', unsafe_allow_html=True)
     t0c1, t0c2, t0c3 = st.columns(3)
     with t0c1:
-        st.link_button("Gemini (3·5단계)", GEMINI_URL, use_container_width=True)
+        st.link_button("Gemini 열기 (3·5단계)", GEMINI_URL, use_container_width=True)
     with t0c2:
-        st.link_button("GitHub (4·6단계)", GITHUB_URL, use_container_width=True)
+        st.link_button("GitHub 열기 (4·6단계)", GITHUB_URL, use_container_width=True)
     with t0c3:
-        st.link_button("Streamlit (7단계)", STREAMLIT_URL, use_container_width=True)
+        st.link_button("Streamlit 열기 (7단계)", STREAMLIT_URL, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab1:
+    render_now_box(
+        "만들고 싶은 앱을 정하기",
+        "무엇을 만들지 정해야 AI에게 부탁할 수 있어요.",
+        "떠오른 생각을 한 줄로 적거나, 키워드로 추천을 받은 뒤 「이 아이디어 선택」을 눌러요.",
+        "3. 프롬프트 탭으로 가서 부탁문을 만들어요",
+    )
     render_gemini_api_panel()
 
-    st.markdown('<p class="section-head"><span></span>내 아이디어 구체화</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-head"><span></span>방법 A. 내 생각을 자세히 풀어주기</p>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="tip">한 줄로 적은 아이디어를 <b>규칙 · 진행 방식 · 핵심 기능</b>까지 펼쳐줘요. '
-        "예: <i>축구 승률 내기 게임</i></div>",
+        '<div class="tip">만들고 싶은 것을 <b>한 줄</b>만 적어도 돼요. '
+        "예: <i>축구 승률 내기 게임</i> → 규칙·진행 방식·기능까지 펼쳐 줍니다.</div>",
         unsafe_allow_html=True,
     )
     st.session_state.idea_input = st.text_area(
-        "내 아이디어 한 줄",
+        "만들고 싶은 앱을 한 줄로 적어 보세요",
         value=st.session_state.idea_input,
         height=80,
         placeholder="예: 축구 승률 내기 게임, 급식 메뉴 투표, 수행평가 D-day 카운터",
         help="떠오른 아이디어를 그대로 적으면 구체적인 기획안으로 바꿔줘요.",
     )
 
-    if st.button("🔍 아이디어 구체화", type="primary", use_container_width=True):
+    if st.button("🔍 이 생각을 자세히 풀어주기", type="primary", use_container_width=True):
         if not st.session_state.idea_input.strip():
-            st.error("구체화할 아이디어를 한 줄로 입력해 주세요.")
+            st.error("만들고 싶은 앱을 한 줄로 적어 주세요. 예: 급식 메뉴 투표")
         else:
-            with st.spinner("아이디어 구체화 중..."):
+            with st.spinner("생각을 구체적으로 만드는 중..."):
                 st.session_state.refined_ideas = refine_idea(st.session_state.idea_input)
 
     if st.session_state.refined_ideas:
-        st.markdown('<div class="tip">구체화된 기획안을 선택하면 <b>프롬프트 탭</b>에 규칙·진행 방식까지 자동 입력됩니다.</div>', unsafe_allow_html=True)
-        render_idea_list(st.session_state.refined_ideas, "refined_pick", "✅ 이 기획안 선택")
+        st.markdown('<div class="tip">마음에 드는 카드를 고르면 <b>3. 프롬프트</b> 탭에 내용이 자동으로 들어갑니다.</div>', unsafe_allow_html=True)
+        render_idea_list(st.session_state.refined_ideas, "refined_pick", "✅ 이걸로 만들기")
 
     st.divider()
-    st.markdown('<p class="section-head"><span></span>키워드로 아이디어 뽑기</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-head"><span></span>방법 B. 키워드로 아이디어 추천받기</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="tip">생각이 안 나면 <b>좋아하는 것</b>만 적어도 됩니다. 예: 축구, 급식, 시험, 게임</div>',
+        unsafe_allow_html=True,
+    )
     st.session_state.topic_input = st.text_input(
-        "주제 키워드",
+        "좋아하는 것 / 주제 키워드",
         value=st.session_state.topic_input,
         placeholder="예: 축구, 밴드, 게임, 진로, 시험 공부",
         help="입력한 키워드와 직접 연관된 웹앱 아이디어를 추천해요.",
     )
 
-    count = st.slider("추천 개수", 3, 10, 5)
-    if st.button("🔥 아이디어 뽑기", type="primary", use_container_width=True):
-        with st.spinner("아이디어 생성 중..."):
+    count = st.slider("몇 개를 추천받을까요?", 3, 10, 5)
+    if st.button("🔥 아이디어 추천받기", type="primary", use_container_width=True):
+        with st.spinner("아이디어를 고르는 중..."):
             st.session_state.ideas = generate_ideas(st.session_state.topic_input, count)
 
     if st.session_state.ideas:
-        st.markdown('<div class="tip">마음에 드는 카드에서 <b>이 아이디어 선택</b> → 프롬프트 탭에 자동 입력</div>', unsafe_allow_html=True)
-        render_idea_list(st.session_state.ideas, "pick", "✅ 이 아이디어 선택")
+        st.markdown('<div class="tip">카드를 읽고, 하고 싶은 것을 고른 뒤 <b>이걸로 만들기</b>를 누르세요.</div>', unsafe_allow_html=True)
+        render_idea_list(st.session_state.ideas, "pick", "✅ 이걸로 만들기")
 
 with tab2:
-    st.markdown('<p class="section-head"><span></span>프롬프트 생성</p>', unsafe_allow_html=True)
-    st.link_button("✨ Gemini 열기", GEMINI_URL, help="프롬프트 복사 후 붙여넣기")
-    app_idea = st.text_area("아이디어 설명", value=st.session_state.selected_idea, height=90)
-    target_user = st.text_input("타겟 사용자", value=st.session_state.selected_target)
-    required_features = st.text_area("필수 기능", value=st.session_state.selected_features, height=90)
+    render_now_box(
+        "AI에게 보낼 부탁문(프롬프트) 만들기",
+        "AI는 우리 생각을 모릅니다. 무엇을 만들지 편지로 알려줘야 화면을 만들어 줘요.",
+        "칸이 비어 있으면 2번 탭에서 아이디어를 먼저 고르세요. 채워져 있으면 아래 주황 버튼만 누르면 됩니다.",
+        "나온 A 부탁문을 복사하고 「4. 화면 만들기」 탭으로 가요",
+    )
+    st.markdown('<p class="section-head"><span></span>부탁문 만들기</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="tip"><b>프롬프트</b> = AI에게 보내는 부탁 편지예요. '
+        "A는 화면용, B는 인터넷에 올리는 용, C는 이미 화면이 있을 때만 씁니다.</div>",
+        unsafe_allow_html=True,
+    )
+    st.link_button("✨ Gemini 열기 (복붙할 창)", GEMINI_URL, help="프롬프트 복사 후 붙여넣기")
+    app_idea = st.text_area("아이디어 설명 (무엇을 만들까요?)", value=st.session_state.selected_idea, height=90)
+    target_user = st.text_input("누가 쓰나요?", value=st.session_state.selected_target)
+    required_features = st.text_area("꼭 들어갔으면 하는 기능", value=st.session_state.selected_features, height=90)
     design_style = st.text_area(
         "원하는 디자인/분위기",
         value=st.session_state.selected_design,
@@ -1515,9 +1707,9 @@ with tab2:
         help="색감, 분위기, 레이아웃 스타일을 적으면 HTML·app.py 프롬프트에 함께 반영됩니다.",
     )
 
-    if st.button("🛠 프롬프트 3종 생성", type="primary", use_container_width=True):
+    if st.button("🛠 AI에게 보낼 부탁문 3개 만들기", type="primary", use_container_width=True):
         if not app_idea.strip() or not required_features.strip():
-            st.error("아이디어 설명과 필수 기능을 입력해 주세요.")
+            st.error("아이디어 설명과 꼭 필요한 기능을 적어 주세요. 2번 탭에서 고르면 자동으로 채워집니다.")
         else:
             st.session_state.selected_design = design_style
             st.session_state.prompt_pack = build_prompt_pack(
@@ -1531,49 +1723,66 @@ with tab2:
         pack = st.session_state.prompt_pack
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### A. HTML 코드 생성 프롬프트 (3단계에서 사용)")
+        st.markdown("### A. 화면(HTML) 만들어 달라는 부탁문 · 3단계에서 사용")
+        st.caption("이걸 복사해서 Gemini에 붙여넣으면 `index.html` 화면 파일이 나와요.")
         st.code(pack["html_prompt"], language="text")
         st.download_button("HTML 프롬프트 다운로드", data=pack["html_prompt"], file_name="prompt_html.txt", mime="text/plain")
         st.link_button("Gemini에서 HTML 만들기", GEMINI_URL, key="gemini_html")
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### B. Streamlit 배포용 app.py 생성 프롬프트 (5단계에서 사용)")
+        st.markdown("### B. 링크로 올려 달라는 부탁문(app.py) · 5단계에서 사용")
+        st.caption("화면이 완성된 다음에 사용해요. Streamlit이 읽어 줄 `app.py`를 만듭니다.")
         st.code(pack["streamlit_prompt"], language="text")
         st.download_button("app.py 프롬프트 다운로드", data=pack["streamlit_prompt"], file_name="prompt_app_py.txt", mime="text/plain")
         st.link_button("Gemini에서 app.py 만들기", GEMINI_URL, key="gemini_app")
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### C. HTML → app.py 변환 프롬프트 (이미 만든 HTML이 있을 때)")
+        st.markdown("### C. 이미 만든 HTML을 app.py로 바꾸는 부탁문 · 화면이 이미 있을 때만")
+        st.caption("A로 화면을 이미 만들었다면, 그 파일을 배포용으로 바꿔 달라고 할 때 씁니다.")
         st.code(pack["convert_prompt"], language="text")
         st.download_button("변환 프롬프트 다운로드", data=pack["convert_prompt"], file_name="prompt_convert.txt", mime="text/plain")
         st.link_button("Gemini에서 변환하기", GEMINI_URL, key="gemini_convert")
         st.markdown("</div>", unsafe_allow_html=True)
 
 with tab3:
+    render_now_box(
+        "AI가 준 코드를 파일로 저장하기",
+        "부탁문만으로는 앱이 안 열려요. 답을 파일로 저장해야 화면에 보입니다.",
+        "먼저 A로 화면(`index.html`)을 만들고, 그게 잘 되면 나중에 B로 `app.py`를 만들어요.",
+        "화면 파일이 준비되면 「5. GitHub」 탭에서 가방에 넣어요",
+    )
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 3단계: HTML 만들기")
-    st.markdown("1. **2번 탭**에서 **A 프롬프트**를 복사해 Gemini에 붙여넣는다.")
+    st.markdown("### 먼저 하기 · 3단계: 화면(HTML) 만들기")
+    st.markdown("**HTML / `index.html`** 은 화면에 보이는 웹페이지 파일입니다. 메모장에 저장해도 됩니다.")
+    st.markdown("1. **3. 프롬프트** 탭에서 **A 부탁문**을 복사해 Gemini에 붙여넣는다.")
     st.link_button("✨ Gemini 열기", GEMINI_URL, key="tab3_gemini_html")
-    st.markdown("2. 생성된 `index.html` 코드를 복사해 파일로 저장한다.")
-    st.markdown("3. 브라우저에서 열어 버튼·입력·결과 화면이 잘 되는지 확인한다.")
-    st.markdown("4. 수정이 필요하면 에러 문구나 원하는 변경 사항을 Gemini에 그대로 전달한다.")
+    st.markdown("2. 나온 코드에서 `index.html` 부분을 복사해 파일로 저장한다.")
+    st.markdown("3. 그 파일을 더블클릭(또는 브라우저로 열기)해서 버튼·입력·결과가 잘 되는지 확인한다.")
+    st.markdown("4. 이상하면 에러 문구나 원하는 변경을 Gemini에 그대로 붙여 넣고 다시 받는다.")
     st.markdown("")
-    st.markdown("### 5단계: app.py 만들기")
-    st.markdown("1. **2번 탭**에서 **B 프롬프트**를 복사해 Gemini에 붙여넣는다.")
+    st.markdown("### 화면이 된 다음 · 5단계: app.py 만들기")
+    st.markdown("**`app.py`** 는 Streamlit이 `htmls/index.html`을 열어 보여주는 **안내 파일**입니다. 화면 자체를 새로 그리는 파일이 아니에요.")
+    st.markdown("1. **3. 프롬프트** 탭에서 **B 부탁문**을 복사해 Gemini에 붙여넣는다.")
     st.link_button("✨ Gemini 열기", GEMINI_URL, key="tab3_gemini_app")
     st.markdown("2. `app.py`는 `htmls/index.html`을 읽어 보여주는 **배포용 껍데기** 역할이다.")
-    st.markdown("3. `requirements.txt`도 함께 생성되므로 같이 저장한다.")
+    st.markdown("3. `requirements.txt`도 함께 생성되므로 같이 저장한다. (재료 목록 파일)")
     st.markdown("")
     st.markdown('<div class="tip">팁: HTML을 먼저 완성한 뒤 app.py를 만드는 순서가 가장 쉽습니다. 출력 형식(```html, ```python)을 프롬프트에 명시하면 코드 품질이 올라갑니다.</div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab4:
+    render_now_box(
+        "만든 파일을 GitHub 가방에 넣기",
+        "내 컴퓨터에만 있으면 친구 핸드폰에서 안 열려요. 인터넷 가방에 넣어야 Streamlit이 가져갈 수 있습니다.",
+        "코딩 명령어는 안 써도 됩니다. 웹사이트에서 파일만 올리면 돼요. 먼저 화면 파일, 나중에 app.py를 올립니다.",
+        "파일이 다 올라가면 「6. 배포」 탭에서 링크로 바꿔요",
+    )
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 4·6단계: GitHub 업로드")
+    st.markdown("### 4·6단계: GitHub에 파일 올리기")
     st.link_button("🐙 GitHub 열기", GITHUB_URL, use_container_width=False)
-    st.markdown("**최종 폴더 구조**를 먼저 맞춘 뒤 업로드하세요.")
+    st.markdown("**GitHub** = 파일을 넣어 두는 인터넷 가방입니다. **최종 폴더 모양**을 먼저 맞춘 뒤 업로드하세요.")
     st.code(
         """내-웹앱/
 ├── app.py
@@ -1582,12 +1791,14 @@ with tab4:
     └── index.html""",
         language="text",
     )
-    st.markdown("#### 방법 1) GitHub 웹사이트에서 직접 업로드")
-    st.markdown("1. GitHub → New repository → 저장소 이름 입력 → Create")
-    st.markdown("2. **Add file → Upload files** 로 `htmls/index.html` 업로드 (4단계)")
-    st.markdown("3. `app.py`, `requirements.txt` 추가 업로드 (6단계)")
+    st.markdown("#### 방법 1) 웹사이트에서 올리기 · 수업에서 이 방법을 권장해요")
+    st.markdown("1. GitHub → **New repository** → 저장소 이름 입력(예: `my-webapp`) → **Create**")
+    st.markdown("2. **Add file → Upload files**")
+    st.markdown("3. **4단계:** `index.html`을 올리되, 이름을 `htmls/index.html`로 적으면 폴더가 자동으로 생깁니다.")
+    st.markdown("4. **6단계:** 같은 방식으로 `app.py`, `requirements.txt`를 **맨 위 폴더**에 추가 업로드합니다.")
     st.markdown("")
-    st.markdown("#### 방법 2) Git 명령어로 업로드")
+    st.markdown("#### 방법 2) Git 명령어로 업로드 · 알고 싶은 사람만")
+    st.caption("명령어가 어렵다면 방법 1만 해도 충분합니다.")
     st.code(
         """git init
 mkdir -p htmls
@@ -1602,8 +1813,15 @@ git push -u origin main""",
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab5:
+    render_now_box(
+        "가방 속 파일을 친구 링크로 바꾸기",
+        "GitHub은 보관함이고, Streamlit이 “이 앱을 인터넷에서 열어줘” 버튼을 눌러 주는 곳입니다.",
+        "GitHub 계정으로 로그인한 뒤 New app → 내 저장소 → Main file path에 app.py → Deploy.",
+        "링크가 나오면 「7. 갤러리」에 올려 자랑해요",
+    )
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 7단계: Streamlit Community Cloud 배포")
+    st.markdown("### 7단계: Streamlit Community Cloud로 배포하기")
+    st.markdown("**배포** = 친구 핸드폰에서도 열리게 공개하는 것입니다. 끝나면 `https://xxxx.streamlit.app` 링크가 나와요.")
     st.link_button("🚀 Streamlit 배포 사이트 열기", STREAMLIT_URL, use_container_width=False)
     st.markdown("1. GitHub 계정으로 로그인")
     st.markdown("2. **New app** 클릭")
@@ -1615,30 +1833,36 @@ with tab5:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab6:
+    render_now_box(
+        "완성 링크를 교실 갤러리에 올리기",
+        "친구 작품을 서로 열어 보면 수업이 더 재미있어요. 먼저 올린 사람이 오늘의 주인공입니다.",
+        "이름, 제목, 한 줄 설명, Streamlit 링크를 적고 등록 버튼을 누르세요.",
+        "여기가 마지막 단계예요. 수고했어요!",
+    )
     st.markdown('<p class="section-head"><span></span>친구들 작품 갤러리</p>', unsafe_allow_html=True)
-    st.markdown('<div class="tip">배포 완료한 Streamlit 링크를 올리면 전체가 볼 수 있어요. 먼저 올린 사람이 주인공 🏆</div>', unsafe_allow_html=True)
+    st.markdown('<div class="tip">배포가 끝난 Streamlit 링크를 올리면 반 전체가 볼 수 있어요. 먼저 올린 사람이 주인공 🏆</div>', unsafe_allow_html=True)
 
     with st.form("share_form", clear_on_submit=True):
-        name = st.text_input("이름")
-        title = st.text_input("웹앱 제목")
-        description = st.text_input("한 줄 설명")
-        url = st.text_input("스트림릿 링크", placeholder="https://...streamlit.app")
-        submit = st.form_submit_button("📤 갤러리에 등록", use_container_width=True)
+        name = st.text_input("내 이름")
+        title = st.text_input("작품 제목")
+        description = st.text_input("한 줄로 소개")
+        url = st.text_input("친구에게 보낼 링크", placeholder="https://...streamlit.app")
+        submit = st.form_submit_button("📤 갤러리에 올리기", use_container_width=True)
 
     if submit:
         if not name.strip() or not title.strip() or not description.strip() or not url.strip():
-            st.error("모든 항목을 입력해 주세요.")
+            st.error("빈칸을 모두 채워 주세요.")
         elif not is_valid_http_url(url):
-            st.error("링크는 http:// 또는 https:// 로 시작해야 해요.")
+            st.error("링크는 http:// 또는 https:// 로 시작해야 해요. Streamlit에서 받은 주소를 그대로 붙여넣으면 됩니다.")
         else:
             try:
                 add_shared_row(name, title, description, url)
-                st.success("제출 완료! 아래 목록에서 친구들과 공유해 보세요.")
+                st.success("올렸어요! 아래에서 친구 작품도 열어 보세요.")
             except Exception as exc:
                 st.error(str(exc))
 
     rows = load_shared_rows()
-    st.caption(f"총 {len(rows)}개 작품")
+    st.caption(f"지금 갤러리에 {len(rows)}개 작품이 있어요")
 
     if not rows:
         st.info("아직 등록된 작품이 없어요. 첫 번째 주인공이 되어 보세요!")
@@ -1656,6 +1880,6 @@ with tab6:
 """,
                 unsafe_allow_html=True,
             )
-            st.link_button("▶ 플레이", row["url"], key=f"play_{idx}", use_container_width=True)
+            st.link_button("▶ 이 앱 열어보기", row["url"], key=f"play_{idx}", use_container_width=True)
 
 st.caption(f"업데이트 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
