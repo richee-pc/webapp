@@ -19,38 +19,40 @@ except Exception:
 
 st.set_page_config(
     page_title="LINKFORGE — AI 웹앱 메이커",
-    page_icon="⚡",
+    page_icon="✨",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 GLOBAL_STYLES = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Orbitron:wght@700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
 :root {
-    --bg-deep: #06080f;
-    --bg-card: rgba(14, 20, 36, 0.88);
-    --bg-card-hover: rgba(18, 28, 50, 0.95);
-    --border: rgba(56, 189, 248, 0.18);
-    --border-glow: rgba(34, 211, 238, 0.45);
-    --accent: #22d3ee;
-    --accent-2: #818cf8;
-    --accent-3: #34d399;
-    --text: #e8edf5;
-    --text-muted: #8b9cb3;
-    --font-display: 'Orbitron', sans-serif;
-    --font-ui: 'Chakra Petch', sans-serif;
+    --bg-deep: #fff8f1;
+    --bg-card: #ffffff;
+    --bg-card-hover: #fffdf9;
+    --border: rgba(251, 146, 60, 0.22);
+    --border-glow: rgba(249, 115, 22, 0.42);
+    --accent: #f97316;
+    --accent-2: #0ea5e9;
+    --accent-3: #10b981;
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --shadow: 0 12px 32px rgba(249, 115, 22, 0.08);
+    --font-display: 'Outfit', sans-serif;
+    --font-ui: 'Plus Jakarta Sans', sans-serif;
     --font-body: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --font-mono: 'Plus Jakarta Sans', sans-serif;
 }
 
 .stApp {
     background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(34, 211, 238, 0.14), transparent),
-        radial-gradient(ellipse 50% 40% at 100% 0%, rgba(129, 140, 248, 0.1), transparent),
-        linear-gradient(180deg, #06080f 0%, #0b1020 45%, #080c16 100%);
+        radial-gradient(ellipse 70% 48% at 8% -8%, rgba(253, 186, 116, 0.42), transparent 58%),
+        radial-gradient(ellipse 58% 42% at 96% 0%, rgba(125, 211, 252, 0.38), transparent 52%),
+        radial-gradient(ellipse 48% 36% at 50% 108%, rgba(167, 243, 208, 0.28), transparent 55%),
+        linear-gradient(180deg, #fff8f1 0%, #f4f9ff 48%, #fff5ee 100%);
     color: var(--text);
     font-family: var(--font-body);
 }
@@ -62,54 +64,54 @@ GLOBAL_STYLES = """
 /* Hero */
 .hero {
     position: relative;
-    padding: 2.1rem 2rem 1.75rem;
+    padding: 2.15rem 2rem 1.8rem;
     margin-bottom: 1.2rem;
-    border-radius: 20px;
+    border-radius: 24px;
     border: 1px solid var(--border);
     background:
-        linear-gradient(135deg, rgba(34, 211, 238, 0.08), rgba(129, 140, 248, 0.06)),
+        linear-gradient(135deg, rgba(254, 215, 170, 0.38), rgba(186, 230, 253, 0.28)),
         var(--bg-card);
+    box-shadow: var(--shadow);
     overflow: hidden;
 }
 .hero::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent), var(--accent-2), transparent);
+    height: 4px;
+    background: linear-gradient(90deg, #fb923c, #f472b6, #38bdf8);
 }
 .hero::after {
     content: '';
     position: absolute;
-    bottom: -40px; right: -20px;
-    width: 180px; height: 180px;
-    background: radial-gradient(circle, rgba(34, 211, 238, 0.07), transparent 70%);
+    bottom: -50px; right: -10px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(251, 146, 60, 0.22), transparent 70%);
     pointer-events: none;
 }
 .hero-logo {
     font-family: var(--font-display);
-    font-size: clamp(1.55rem, 3.5vw, 2.1rem);
-    font-weight: 900;
-    letter-spacing: 0.22em;
+    font-size: clamp(1.55rem, 3.5vw, 2.15rem);
+    font-weight: 800;
+    letter-spacing: 0.16em;
     margin: 0 0 0.55rem 0;
     line-height: 1;
-    background: linear-gradient(100deg, #67e8f9 0%, #22d3ee 40%, #a5b4fc 100%);
+    background: linear-gradient(100deg, #ea580c 0%, #f97316 38%, #0284c7 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-shadow: 0 0 40px rgba(34, 211, 238, 0.15);
 }
 .hero-badge {
     display: inline-block;
     font-family: var(--font-ui);
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    color: var(--accent-2);
-    background: rgba(129, 140, 248, 0.08);
-    border: 1px solid rgba(129, 140, 248, 0.28);
-    padding: 0.28rem 0.8rem;
-    border-radius: 6px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #0369a1;
+    background: rgba(14, 165, 233, 0.12);
+    border: 1px solid rgba(14, 165, 233, 0.28);
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
     margin-bottom: 0.85rem;
 }
 .hero-title {
@@ -118,33 +120,33 @@ GLOBAL_STYLES = """
     font-weight: 800;
     margin: 0 0 0.5rem 0;
     line-height: 1.35;
-    color: #f1f5f9;
+    color: var(--text);
     letter-spacing: -0.02em;
 }
 .hero-accent {
     font-family: var(--font-display);
     font-weight: 800;
-    letter-spacing: 0.04em;
-    background: linear-gradient(90deg, #22d3ee, #818cf8);
+    letter-spacing: 0.02em;
+    background: linear-gradient(90deg, #ea580c, #db2777);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 .hero-sub {
     font-family: var(--font-body);
-    color: var(--text-muted);
-    font-size: 0.95rem;
-    font-weight: 400;
+    color: var(--text-muted) !important;
+    font-size: 0.97rem;
+    font-weight: 500;
     margin: 0;
-    line-height: 1.6;
+    line-height: 1.65;
     letter-spacing: -0.01em;
 }
 .hero-sub em {
     font-style: normal;
-    font-family: var(--font-mono);
-    font-size: 0.82rem;
-    color: #6ee7b7;
-    font-weight: 600;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: #059669;
+    font-weight: 700;
 }
 
 /* Stats */
@@ -157,19 +159,20 @@ GLOBAL_STYLES = """
 .stat-pill {
     flex: 1;
     min-width: 140px;
-    padding: 0.85rem 1.1rem;
-    border-radius: 14px;
+    padding: 0.9rem 1.15rem;
+    border-radius: 18px;
     border: 1px solid var(--border);
     background: var(--bg-card);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.06);
 }
 .stat-label {
     display: block;
     font-family: var(--font-ui);
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     color: var(--accent);
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.22rem;
 }
 .stat-value {
     font-family: var(--font-body);
@@ -182,15 +185,17 @@ GLOBAL_STYLES = """
 /* Cards */
 .card, .idea-card, .gallery-card {
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 1.15rem 1.25rem;
+    border-radius: 20px;
+    padding: 1.2rem 1.3rem;
     margin-bottom: 0.85rem;
     background: var(--bg-card);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: var(--shadow);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 .card:hover, .idea-card:hover, .gallery-card:hover {
     border-color: var(--border-glow);
-    box-shadow: 0 0 24px rgba(34, 211, 238, 0.08);
+    box-shadow: 0 16px 36px rgba(249, 115, 22, 0.12);
+    transform: translateY(-1px);
 }
 .card h3, .idea-card h3, .gallery-card h3 {
     font-family: var(--font-body);
@@ -199,7 +204,7 @@ GLOBAL_STYLES = """
     margin-top: 0;
 }
 .card p, .card li, .idea-card p, .idea-card li {
-    color: #b6c4d8;
+    color: #4b5563;
 }
 
 .idea-card { position: relative; padding-top: 1.4rem; margin-bottom: 0 !important; }
@@ -209,7 +214,7 @@ GLOBAL_STYLES = """
     margin-bottom: 0.55rem !important;
 }
 
-/* Streamlit 기본 흰 배경 제거 */
+/* Streamlit 컨테이너를 투명하게 해서 페이지 배경이 보이게 */
 [data-testid="stAppViewContainer"] [data-testid="stMain"] [data-testid="stVerticalBlock"] > div,
 [data-testid="stVerticalBlockBorderWrapper"],
 [data-testid="stMarkdownContainer"],
@@ -232,34 +237,34 @@ GLOBAL_STYLES = """
 .ai-badge {
     display: inline-block;
     font-family: var(--font-ui);
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    color: #6ee7b7;
-    background: rgba(52, 211, 153, 0.1);
-    border: 1px solid rgba(52, 211, 153, 0.28);
-    padding: 0.22rem 0.65rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #047857;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    padding: 0.24rem 0.7rem;
     border-radius: 999px;
     margin-bottom: 0.65rem;
 }
 .ai-badge.off {
-    color: #94a3b8;
-    background: rgba(148, 163, 184, 0.08);
-    border-color: rgba(148, 163, 184, 0.2);
+    color: #6b7280;
+    background: rgba(148, 163, 184, 0.12);
+    border-color: rgba(148, 163, 184, 0.28);
 }
 .idea-rank {
     position: absolute;
     top: 0.9rem; right: 1rem;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--accent-2);
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--accent);
     opacity: 0.85;
 }
 .idea-title {
     font-family: var(--font-body);
     font-size: 1.12rem;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text);
     margin: 0 0 0.6rem 0;
     letter-spacing: -0.02em;
@@ -267,24 +272,46 @@ GLOBAL_STYLES = """
 .idea-tag {
     display: inline-block;
     font-family: var(--font-ui);
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--accent-3);
-    background: rgba(52, 211, 153, 0.1);
-    border: 1px solid rgba(52, 211, 153, 0.25);
-    padding: 0.15rem 0.55rem;
-    border-radius: 6px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #047857;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.22);
+    padding: 0.18rem 0.58rem;
+    border-radius: 999px;
     margin-right: 0.35rem;
     margin-bottom: 0.35rem;
 }
+.idea-tag.vibe {
+    color: #0369a1;
+    background: rgba(14, 165, 233, 0.12);
+    border-color: rgba(14, 165, 233, 0.22);
+}
+.idea-summary { margin: 0 0 0.75rem 0; color: #374151 !important; font-size: 0.9rem; }
+.idea-target { margin: 0 0 0.5rem 0; color: var(--text-muted) !important; font-size: 0.88rem; }
+.idea-problem { margin: 0 0 0.75rem 0; color: #4b5563 !important; font-size: 0.92rem; }
+.idea-flow { margin: 0 0 0.75rem 0; color: #4b5563 !important; font-size: 0.88rem; line-height: 1.5; }
+.idea-rules { margin: 0 0 0.75rem 1.1rem; padding: 0; }
+.idea-tags { margin-bottom: 0.75rem; }
+.idea-kicker {
+    margin: 0 0 0.35rem 0;
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+}
+.idea-kicker.rules { color: #d97706; }
+.idea-kicker.flow { color: #db2777; }
+.idea-kicker.features { color: #ea580c; }
+.idea-kicker.vibe { color: #0284c7; }
 
 .tip {
-    border-left: 3px solid var(--accent);
-    padding: 0.75rem 1rem;
-    background: rgba(34, 211, 238, 0.06);
-    border-radius: 0 12px 12px 0;
+    border-left: 4px solid var(--accent);
+    padding: 0.8rem 1.05rem;
+    background: rgba(255, 237, 213, 0.7);
+    border-radius: 0 14px 14px 0;
     margin-bottom: 0.85rem;
-    color: #b8c9de;
+    color: #4b5563;
     font-size: 0.92rem;
     line-height: 1.55;
 }
@@ -296,20 +323,24 @@ GLOBAL_STYLES = """
     color: var(--text);
     margin: 0.2rem 0 0.85rem 0;
     letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
 }
 .section-head span {
-    font-family: var(--font-mono);
-    font-weight: 600;
-    color: var(--accent);
-    margin-right: 0.45rem;
-    font-size: 1rem;
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #fb923c, #38bdf8);
+    margin-right: 0.55rem;
+    font-size: 0;
 }
 
 .quick-label {
     font-family: var(--font-ui);
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     color: var(--text-muted);
     margin-bottom: 0.45rem;
 }
@@ -317,110 +348,157 @@ GLOBAL_STYLES = """
 /* Tabs */
 .stTabs [data-baseweb="tab-list"] {
     gap: 6px;
-    background: rgba(8, 12, 22, 0.6);
+    background: rgba(255, 255, 255, 0.82);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 6px;
+    box-shadow: 0 8px 22px rgba(14, 165, 233, 0.06);
 }
 .stTabs [data-baseweb="tab"] {
     font-family: var(--font-ui);
-    font-weight: 600;
+    font-weight: 700;
     font-size: 0.84rem;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.01em;
     color: var(--text-muted);
-    border-radius: 10px;
-    padding: 0.45rem 0.7rem;
+    border-radius: 12px;
+    padding: 0.48rem 0.72rem;
     background: transparent;
 }
 .stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(129, 140, 248, 0.15)) !important;
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(56, 189, 248, 0.18)) !important;
     color: var(--text) !important;
-    border: 1px solid rgba(34, 211, 238, 0.25);
+    border: 1px solid rgba(249, 115, 22, 0.28);
 }
 .stTabs [data-baseweb="tab-panel"] {
     padding-top: 1.1rem;
 }
 
 /* Buttons */
-.stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #0891b2, #6366f1) !important;
-    border: none !important;
+.stButton > button {
+    background: #ffffff !important;
+    color: var(--text) !important;
+    border: 1.5px solid var(--border) !important;
     font-family: var(--font-ui) !important;
     font-weight: 700 !important;
-    letter-spacing: 0.06em !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 20px rgba(34, 211, 238, 0.25) !important;
-    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+    border-radius: 14px !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+}
+.stButton > button:hover {
+    border-color: var(--accent) !important;
+    color: #c2410c !important;
+    background: #fff7ed !important;
+    transform: translateY(-1px);
+}
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #fb923c, #f43f5e) !important;
+    border: none !important;
+    color: #ffffff !important;
+    letter-spacing: 0.02em !important;
+    box-shadow: 0 8px 22px rgba(249, 115, 22, 0.28) !important;
 }
 .stButton > button[kind="primary"]:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 28px rgba(34, 211, 238, 0.35) !important;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #f97316, #e11d48) !important;
+    box-shadow: 0 12px 28px rgba(249, 115, 22, 0.36) !important;
 }
 .stButton > button[kind="secondary"] {
-    border-radius: 12px !important;
+    border-radius: 14px !important;
     border-color: var(--border) !important;
 }
 
 a[data-testid="stLinkButton"] {
-    background: rgba(14, 20, 36, 0.9) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 12px !important;
+    background: #ffffff !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: 14px !important;
     color: var(--text) !important;
     font-family: var(--font-ui) !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.04em !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em !important;
+    box-shadow: 0 6px 16px rgba(14, 165, 233, 0.06) !important;
     transition: all 0.15s ease !important;
 }
 a[data-testid="stLinkButton"]:hover {
-    border-color: var(--border-glow) !important;
-    box-shadow: 0 0 16px rgba(34, 211, 238, 0.15) !important;
-    color: var(--accent) !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 10px 22px rgba(249, 115, 22, 0.14) !important;
+    color: #c2410c !important;
+    background: #fff7ed !important;
 }
 
 /* Inputs */
 .stTextInput input, .stTextArea textarea, .stSelectbox > div > div {
-    background: rgba(10, 14, 26, 0.9) !important;
-    border-color: var(--border) !important;
-    border-radius: 12px !important;
+    background: #ffffff !important;
+    border-color: #fed7aa !important;
+    border-radius: 14px !important;
     color: var(--text) !important;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.16) !important;
 }
 .stTextInput label, .stTextArea label, .stSlider label {
     color: var(--text-muted) !important;
     font-family: var(--font-body) !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     font-size: 0.85rem !important;
 }
 
 /* Code blocks */
 .stCode, pre {
-    border-radius: 12px !important;
+    border-radius: 14px !important;
     border: 1px solid var(--border) !important;
+    background: #fffaf5 !important;
 }
 
 /* Metrics override hide if used */
 div[data-testid="stMetric"] {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 0.75rem 1rem;
 }
 
 /* Markdown in flow */
 .card h2, .card h3, .card h4 { color: var(--text); }
-.card strong { color: #c8d6ea; }
+.card strong { color: #111827; }
 .card table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
 .card th, .card td {
-    border: 1px solid var(--border);
+    border: 1px solid #fed7aa;
     padding: 0.55rem 0.75rem;
-    color: #b6c4d8;
+    color: #4b5563;
     font-size: 0.88rem;
 }
-.card th { background: rgba(34, 211, 238, 0.08); color: var(--accent); font-weight: 700; }
+.card th { background: rgba(255, 237, 213, 0.8); color: #c2410c; font-weight: 700; }
+.card blockquote {
+    border-left: 4px solid var(--accent);
+    background: #fff7ed;
+    color: var(--text);
+    padding: 0.7rem 1rem;
+    border-radius: 0 12px 12px 0;
+}
+.card code { background: #fff1e6; color: #c2410c; padding: 0.1rem 0.35rem; border-radius: 6px; }
 
 .gallery-meta { color: var(--text-muted); font-size: 0.88rem; margin: 0.2rem 0; }
-.gallery-author { color: var(--accent-2); font-weight: 600; }
+.gallery-author { color: #0284c7; font-weight: 700; }
+.gallery-time { font-size: 0.75rem; color: #9ca3af; margin: 0.4rem 0 0 0; }
+
+[data-testid="stExpander"] details,
+[data-testid="stForm"] {
+    background: #ffffff;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 20px rgba(249, 115, 22, 0.05);
+}
+[data-testid="stExpander"] summary { color: var(--text) !important; }
 
 .stCaption { color: var(--text-muted) !important; }
+
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3,
+[data-testid="stMarkdownContainer"] h4 {
+    color: var(--text) !important;
+}
+hr { border-color: #fed7aa !important; }
 </style>
 """
 
@@ -475,7 +553,7 @@ def has_gemini_api() -> bool:
 
 def render_gemini_api_panel() -> None:
     secret_key = get_secret_api_key()
-    with st.expander("⚡ Gemini AI 연동 (선택 · 더 좋은 결과)", expanded=not secret_key):
+    with st.expander("✨ Gemini AI 연동 (선택 · 더 좋은 결과)", expanded=not secret_key):
         if secret_key:
             st.markdown(
                 '<span class="ai-badge">AI MODE · ON (배포 secrets 연동)</span>',
@@ -924,7 +1002,7 @@ def fill_prompt_from_idea(idea: Dict[str, Any]) -> None:
         feature_parts.extend(idea["game_flow"][:2])
     st.session_state.selected_features = ", ".join(feature_parts + idea.get("fun_ui", []))
     st.session_state.selected_design = ", ".join(idea["fun_ui"])
-    st.toast("아이디어 적용 완료! 프롬프트 탭으로 가보세요", icon="⚡")
+    st.toast("아이디어 적용 완료! 프롬프트 탭으로 가보세요", icon="✨")
 
 
 def build_prompt_pack(
@@ -1281,41 +1359,36 @@ def add_shared_row(name: str, title: str, description: str, url: str) -> None:
 
 def render_idea_card_html(idea: Dict[str, Any], index: int) -> str:
     features = "".join(f'<span class="idea-tag">{f}</span>' for f in idea.get("core_features", []))
-    ui_tags = "".join(f'<span class="idea-tag">{u}</span>' for u in idea.get("fun_ui", []))
+    ui_tags = "".join(f'<span class="idea-tag vibe">{u}</span>' for u in idea.get("fun_ui", []))
 
     extra_blocks = ""
     if idea.get("concept_summary"):
-        extra_blocks += f'<p style="margin:0 0 0.75rem 0;color:#c4d4e8;font-size:0.9rem;">📌 {idea["concept_summary"]}</p>'
+        extra_blocks += f'<p class="idea-summary">📌 {idea["concept_summary"]}</p>'
 
     if idea.get("game_rules"):
-        rules = "".join(
-            f'<li style="margin-bottom:0.25rem;color:#b6c4d8;font-size:0.88rem;">{rule}</li>'
-            for rule in idea["game_rules"]
-        )
+        rules = "".join(f"<li>{rule}</li>" for rule in idea["game_rules"])
         extra_blocks += (
-            '<p style="margin:0 0 0.35rem 0;font-family:\'Chakra Petch\',sans-serif;font-size:0.75rem;'
-            'font-weight:600;color:#fbbf24;letter-spacing:0.1em;">RULES</p>'
-            f'<ul style="margin:0 0 0.75rem 1.1rem;padding:0;">{rules}</ul>'
+            '<p class="idea-kicker rules">규칙</p>'
+            f'<ul class="idea-rules">{rules}</ul>'
         )
 
     if idea.get("game_flow"):
         flow = " → ".join(idea["game_flow"])
         extra_blocks += (
-            '<p style="margin:0 0 0.35rem 0;font-family:\'Chakra Petch\',sans-serif;font-size:0.75rem;'
-            'font-weight:600;color:#a78bfa;letter-spacing:0.1em;">FLOW</p>'
-            f'<p style="margin:0 0 0.75rem 0;color:#b6c4d8;font-size:0.88rem;line-height:1.5;">{flow}</p>'
+            '<p class="idea-kicker flow">진행</p>'
+            f'<p class="idea-flow">{flow}</p>'
         )
 
     return f"""
 <div class="idea-card">
     <span class="idea-rank">#{index:02d}</span>
     <h3 class="idea-title">{idea['app_name']}</h3>
-    <p style="margin:0 0 0.5rem 0;color:#8b9cb3;font-size:0.88rem;">🎯 {idea['target_user']}</p>
-    <p style="margin:0 0 0.75rem 0;color:#b6c4d8;font-size:0.92rem;">💡 {idea['problem']}</p>
+    <p class="idea-target">🎯 {idea['target_user']}</p>
+    <p class="idea-problem">💡 {idea['problem']}</p>
     {extra_blocks}
-    <p style="margin:0 0 0.35rem 0;font-family:'Chakra Petch',sans-serif;font-size:0.75rem;font-weight:600;color:#22d3ee;letter-spacing:0.1em;">CORE FEATURES</p>
-    <div style="margin-bottom:0.75rem;">{features}</div>
-    <p style="margin:0 0 0.35rem 0;font-family:'Chakra Petch',sans-serif;font-size:0.75rem;font-weight:600;color:#818cf8;letter-spacing:0.1em;">UI VIBE</p>
+    <p class="idea-kicker features">핵심 기능</p>
+    <div class="idea-tags">{features}</div>
+    <p class="idea-kicker vibe">분위기</p>
     <div>{ui_tags}</div>
 </div>
 """.strip()
@@ -1327,18 +1400,18 @@ st.markdown(
     """
 <div class="hero">
     <p class="hero-logo">LINKFORGE</p>
-    <div class="hero-badge">IDEA → BUILD → SHIP</div>
+    <div class="hero-badge">아이디어 → 만들기 → 배포</div>
     <h1 class="hero-title">생각난 순간, <span class="hero-accent">LINK</span>로 배포</h1>
-    <p class="hero-sub">프롬프트 한 방이면 웹앱 완성. GitHub에 올리고 친구한테 <em>링크 던지기</em>까지 — 7스텝 클리어.</p>
+    <p class="hero-sub">프롬프트 한 방이면 웹앱 완성. GitHub에 올리고 친구한테 <em>링크 던지기</em>까지 — 7스텝이면 끝.</p>
 </div>
 """,
     unsafe_allow_html=True,
 )
 
-st.markdown('<p class="quick-label">FAST TRACK</p>', unsafe_allow_html=True)
+st.markdown('<p class="quick-label">바로가기</p>', unsafe_allow_html=True)
 link1, link2, link3 = st.columns(3)
 with link1:
-    st.link_button("⚡ Gemini", GEMINI_URL, use_container_width=True, help="프롬프트 붙여넣고 코드 생성")
+    st.link_button("✨ Gemini", GEMINI_URL, use_container_width=True, help="프롬프트 붙여넣고 코드 생성")
 with link2:
     st.link_button("⌨ GitHub", GITHUB_URL, use_container_width=True, help="저장소 만들고 파일 업로드")
 with link3:
@@ -1347,9 +1420,9 @@ with link3:
 st.markdown(
     """
 <div class="stat-row">
-    <div class="stat-pill"><span class="stat-label">PIPELINE</span><span class="stat-value">7스텝 클리어</span></div>
-    <div class="stat-pill"><span class="stat-label">AUTO PROMPT</span><span class="stat-value">3종 즉시 생성</span></div>
-    <div class="stat-pill"><span class="stat-label">SHOWCASE</span><span class="stat-value">작품 링크 공유</span></div>
+    <div class="stat-pill"><span class="stat-label">따라가기</span><span class="stat-value">7단계 로드맵</span></div>
+    <div class="stat-pill"><span class="stat-label">프롬프트</span><span class="stat-value">3종 즉시 생성</span></div>
+    <div class="stat-pill"><span class="stat-label">갤러리</span><span class="stat-value">작품 링크 공유</span></div>
 </div>
 """,
     unsafe_allow_html=True,
@@ -1372,7 +1445,7 @@ with tab0:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown(process_flow_markdown())
     st.markdown("---")
-    st.markdown('<p class="quick-label">FAST TRACK</p>', unsafe_allow_html=True)
+    st.markdown('<p class="quick-label">바로가기</p>', unsafe_allow_html=True)
     t0c1, t0c2, t0c3 = st.columns(3)
     with t0c1:
         st.link_button("Gemini (3·5단계)", GEMINI_URL, use_container_width=True)
@@ -1385,7 +1458,7 @@ with tab0:
 with tab1:
     render_gemini_api_panel()
 
-    st.markdown('<p class="section-head"><span>//</span>내 아이디어 구체화</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-head"><span></span>내 아이디어 구체화</p>', unsafe_allow_html=True)
     st.markdown(
         '<div class="tip">한 줄로 적은 아이디어를 <b>규칙 · 진행 방식 · 핵심 기능</b>까지 펼쳐줘요. '
         "예: <i>축구 승률 내기 게임</i></div>",
@@ -1411,7 +1484,7 @@ with tab1:
         render_idea_list(st.session_state.refined_ideas, "refined_pick", "✅ 이 기획안 선택")
 
     st.divider()
-    st.markdown('<p class="section-head"><span>//</span>키워드로 아이디어 뽑기</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-head"><span></span>키워드로 아이디어 뽑기</p>', unsafe_allow_html=True)
     st.session_state.topic_input = st.text_input(
         "주제 키워드",
         value=st.session_state.topic_input,
@@ -1429,8 +1502,8 @@ with tab1:
         render_idea_list(st.session_state.ideas, "pick", "✅ 이 아이디어 선택")
 
 with tab2:
-    st.markdown('<p class="section-head"><span>//</span>프롬프트 생성</p>', unsafe_allow_html=True)
-    st.link_button("⚡ Gemini 열기", GEMINI_URL, help="프롬프트 복사 후 붙여넣기")
+    st.markdown('<p class="section-head"><span></span>프롬프트 생성</p>', unsafe_allow_html=True)
+    st.link_button("✨ Gemini 열기", GEMINI_URL, help="프롬프트 복사 후 붙여넣기")
     app_idea = st.text_area("아이디어 설명", value=st.session_state.selected_idea, height=90)
     target_user = st.text_input("타겟 사용자", value=st.session_state.selected_target)
     required_features = st.text_area("필수 기능", value=st.session_state.selected_features, height=90)
@@ -1542,7 +1615,7 @@ with tab5:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab6:
-    st.markdown('<p class="section-head"><span>//</span>친구들 작품 갤러리</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-head"><span></span>친구들 작품 갤러리</p>', unsafe_allow_html=True)
     st.markdown('<div class="tip">배포 완료한 Streamlit 링크를 올리면 전체가 볼 수 있어요. 먼저 올린 사람이 주인공 🏆</div>', unsafe_allow_html=True)
 
     with st.form("share_form", clear_on_submit=True):
@@ -1578,7 +1651,7 @@ with tab6:
     <h3 style="font-family:'Pretendard',sans-serif;font-weight:700;margin:0 0 0.5rem 0;">{row['title']}</h3>
     <p class="gallery-meta">by <span class="gallery-author">{row['name']}</span></p>
     <p class="gallery-meta">{row['description']}</p>
-    <p style="font-size:0.75rem;color:#6b7f96;margin:0.4rem 0 0 0;">{row['submitted_at']}</p>
+    <p class="gallery-time">{row['submitted_at']}</p>
 </div>
 """,
                 unsafe_allow_html=True,
